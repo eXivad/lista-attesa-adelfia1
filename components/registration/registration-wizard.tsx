@@ -1,0 +1,454 @@
+"use client";
+
+import { cloneElement, isValidElement, useMemo, useState } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Check, ChevronLeft, ChevronRight, LoaderCircle } from "lucide-react";
+import { get, useForm, type FieldPath, type Resolver } from "react-hook-form";
+
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  createApplicantRegistrationSchema,
+  type ApplicantRegistrationInput,
+} from "@/modules/applicants/schemas/registration";
+import { cn } from "@/lib/utils";
+
+const steps = ["Dati del minore", "Genitore A", "Genitore B", "Privacy", "Riepilogo", "Conferma"];
+
+const stepFields: Array<Array<FieldPath<ApplicantRegistrationInput>>> = [
+  [
+    "minor.firstName",
+    "minor.lastName",
+    "minor.gender",
+    "minor.birthDate",
+    "minor.birthPlace",
+    "minor.birthProvince",
+    "minor.fiscalCode",
+    "minor.notes",
+  ],
+  [
+    "guardians.0.firstName",
+    "guardians.0.lastName",
+    "guardians.0.birthDate",
+    "guardians.0.birthPlace",
+    "guardians.0.birthProvince",
+    "guardians.0.fiscalCode",
+    "guardians.0.address",
+    "guardians.0.city",
+    "guardians.0.province",
+    "guardians.0.email",
+    "guardians.0.phone",
+  ],
+  [
+    "guardians.1.firstName",
+    "guardians.1.lastName",
+    "guardians.1.birthDate",
+    "guardians.1.birthPlace",
+    "guardians.1.birthProvince",
+    "guardians.1.fiscalCode",
+    "guardians.1.address",
+    "guardians.1.city",
+    "guardians.1.province",
+    "guardians.1.email",
+    "guardians.1.phone",
+  ],
+  ["privacyAccepted"],
+  [],
+];
+
+export type RegisterApplicantActionResult =
+  | { status: "idle" }
+  | { status: "success"; registrationNumber: string; emailDelivery: "SENT" | "FAILED" }
+  | { status: "error"; message: string };
+
+interface RegistrationWizardProps {
+  privacyPolicy: { version: string; fileUrl: string };
+  submitAction: (input: ApplicantRegistrationInput) => Promise<RegisterApplicantActionResult>;
+}
+
+export function RegistrationWizard({ privacyPolicy, submitAction }: RegistrationWizardProps) {
+  const [step, setStep] = useState(0);
+  const [pending, setPending] = useState(false);
+  const [result, setResult] = useState<RegisterApplicantActionResult>({ status: "idle" });
+  const schema = useMemo(() => createApplicantRegistrationSchema(), []);
+  const form = useForm<ApplicantRegistrationInput>({
+    resolver: zodResolver(schema) as Resolver<ApplicantRegistrationInput>,
+    mode: "onTouched",
+    defaultValues: {
+      minor: {
+        firstName: "",
+        lastName: "",
+        gender: "M",
+        birthDate: "",
+        birthPlace: "",
+        birthProvince: "",
+        fiscalCode: "",
+        notes: "",
+      },
+      guardians: [emptyGuardian("A"), emptyGuardian("B")],
+      privacyAccepted: false,
+      privacyPolicyVersion: privacyPolicy.version,
+    },
+  });
+
+  const values = form.getValues();
+  const errorFor = (name: FieldPath<ApplicantRegistrationInput>) => {
+    const error = get(form.formState.errors, name);
+    return typeof error?.message === "string" ? error.message : undefined;
+  };
+
+  async function goForward() {
+    const isValid = await form.trigger(stepFields[step], { shouldFocus: true });
+    if (isValid) {
+      setStep((current) => Math.min(current + 1, 4));
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }
+
+  const onSubmit = form.handleSubmit(async (input) => {
+    setPending(true);
+    setResult({ status: "idle" });
+    try {
+      const actionResult = await submitAction(input);
+      setResult(actionResult);
+      if (actionResult.status === "success") {
+        setStep(5);
+      }
+    } finally {
+      setPending(false);
+    }
+  });
+
+  if (result.status === "success") {
+    return (
+      <Card className="overflow-hidden">
+        <CardContent className="flex flex-col items-center gap-5 py-12 text-center" aria-live="polite">
+          <span className="flex size-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-800">
+            <Check className="size-8" aria-hidden="true" />
+          </span>
+          <div className="space-y-2">
+            <p className="font-slab text-3xl font-bold text-violet-950">Iscrizione completata</p>
+            <p className="max-w-lg text-stone-600">
+              Conserva il numero della pratica: potrà essere utilizzato per richiedere assistenza al Gruppo.
+            </p>
+          </div>
+          <strong className="rounded-2xl bg-violet-50 px-6 py-4 font-mono text-xl tracking-wide text-violet-950">
+            {result.registrationNumber}
+          </strong>
+          {result.emailDelivery === "FAILED" && (
+            <p className="max-w-lg rounded-xl bg-amber-50 p-4 text-sm text-amber-950">
+              La pratica è valida, ma la mail di conferma non è partita. I Capi potranno verificarne l’invio.
+            </p>
+          )}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-5">
+      <div>
+        <p className="text-sm font-bold uppercase tracking-[0.16em] text-violet-700">AGESCI Adelfia 1</p>
+        <h1 className="font-slab mt-2 text-3xl font-bold text-violet-950 sm:text-4xl">
+          Iscrizione alla lista d’attesa
+        </h1>
+        <p className="mt-3 max-w-2xl text-stone-600">
+          Compila tutti i passaggi. I dati non saranno inviati finché non confermerai il riepilogo.
+        </p>
+        <a
+          className="mt-3 inline-flex min-h-11 items-center text-sm font-bold text-violet-800 underline underline-offset-4"
+          href={privacyPolicy.fileUrl}
+          target="_blank"
+          rel="noreferrer"
+        >
+          Informativa privacy versione {privacyPolicy.version}
+        </a>
+      </div>
+
+      <nav aria-label="Avanzamento iscrizione" className="overflow-x-auto pb-2">
+        <ol className="flex min-w-max items-center gap-2">
+          {steps.map((label, index) => (
+            <li key={label} className="flex items-center gap-2">
+              <span
+                aria-current={index === step ? "step" : undefined}
+                className={cn(
+                  "flex min-h-11 items-center gap-2 rounded-full border px-3 text-xs font-bold",
+                  index === step && "border-violet-800 bg-violet-800 text-white",
+                  index < step && "border-emerald-200 bg-emerald-50 text-emerald-900",
+                  index > step && "border-stone-200 bg-white text-stone-500",
+                )}
+              >
+                <span aria-hidden="true">{index < step ? "✓" : index + 1}</span>
+                <span>{label}</span>
+              </span>
+              {index < steps.length - 1 && <span className="h-px w-3 bg-stone-300" aria-hidden="true" />}
+            </li>
+          ))}
+        </ol>
+      </nav>
+
+      <Card>
+        <CardHeader>
+          <p className="text-sm font-bold text-violet-700">Passaggio {step + 1} di 5</p>
+          <h2 className="font-slab text-2xl font-bold text-violet-950">{steps[step]}</h2>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={onSubmit} noValidate>
+            {step === 0 && (
+              <div className="grid gap-5 sm:grid-cols-2">
+                <FormField label="Nome" name="minor.firstName" error={errorFor("minor.firstName")}>
+                  <Input id="minor.firstName" autoComplete="given-name" {...form.register("minor.firstName")} />
+                </FormField>
+                <FormField label="Cognome" name="minor.lastName" error={errorFor("minor.lastName")}>
+                  <Input id="minor.lastName" autoComplete="family-name" {...form.register("minor.lastName")} />
+                </FormField>
+                <FormField label="Sesso" name="minor.gender" error={errorFor("minor.gender")}>
+                  <select id="minor.gender" className="form-control" {...form.register("minor.gender")}>
+                    <option value="M">Maschio</option>
+                    <option value="F">Femmina</option>
+                  </select>
+                </FormField>
+                <FormField label="Data di nascita" name="minor.birthDate" error={errorFor("minor.birthDate")}>
+                  <Input id="minor.birthDate" type="date" {...form.register("minor.birthDate")} />
+                </FormField>
+                <FormField label="Luogo di nascita" name="minor.birthPlace" error={errorFor("minor.birthPlace")}>
+                  <Input id="minor.birthPlace" {...form.register("minor.birthPlace")} />
+                </FormField>
+                <FormField label="Provincia di nascita" name="minor.birthProvince" error={errorFor("minor.birthProvince")} hint="Sigla di due lettere">
+                  <Input id="minor.birthProvince" maxLength={2} autoCapitalize="characters" {...form.register("minor.birthProvince")} />
+                </FormField>
+                <FormField label="Codice Fiscale" name="minor.fiscalCode" error={errorFor("minor.fiscalCode")} className="sm:col-span-2">
+                  <Input id="minor.fiscalCode" maxLength={24} autoCapitalize="characters" {...form.register("minor.fiscalCode")} />
+                </FormField>
+                <FormField label="Note" name="minor.notes" error={errorFor("minor.notes")} className="sm:col-span-2" hint="Provenienza da altro gruppo, fratelli o sorelle nel gruppo, residenza fuori paese o altre informazioni utili.">
+                  <Textarea id="minor.notes" {...form.register("minor.notes")} />
+                </FormField>
+              </div>
+            )}
+
+            {(step === 1 || step === 2) && (
+              <GuardianFields
+                index={step - 1 as 0 | 1}
+                register={form.register}
+                errorFor={errorFor}
+              />
+            )}
+
+            {step === 3 && (
+              <div className="space-y-5">
+                <div className="rounded-2xl bg-violet-50 p-5 text-sm leading-6 text-violet-950">
+                  Prima di proseguire, consulta l’
+                  <a className="font-bold underline" href={privacyPolicy.fileUrl} target="_blank" rel="noreferrer">
+                    informativa privacy versione {privacyPolicy.version}
+                  </a>
+                  .
+                </div>
+                <div>
+                  <label className="flex min-h-12 cursor-pointer items-start gap-3 rounded-2xl border border-stone-300 p-4">
+                    <input
+                      type="checkbox"
+                      className="mt-1 size-5 accent-violet-800"
+                      aria-invalid={Boolean(errorFor("privacyAccepted"))}
+                      aria-describedby={errorFor("privacyAccepted") ? "privacyAccepted-error" : undefined}
+                      {...form.register("privacyAccepted")}
+                    />
+                    <span className="text-sm leading-6 text-stone-800">
+                      Ho letto e accetto l’informativa privacy versione {privacyPolicy.version}.
+                    </span>
+                  </label>
+                  {errorFor("privacyAccepted") && <FieldError id="privacyAccepted-error" message={errorFor("privacyAccepted")!} />}
+                </div>
+              </div>
+            )}
+
+            {step === 4 && <RegistrationSummary values={values} />}
+
+            {result.status === "error" && (
+              <p role="alert" className="mt-6 rounded-xl bg-red-50 p-4 text-sm font-medium text-red-900">
+                {result.message}
+              </p>
+            )}
+
+            <div className="mt-8 flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setStep((current) => Math.max(0, current - 1))}
+                disabled={step === 0 || pending}
+              >
+                <ChevronLeft className="size-4" aria-hidden="true" />
+                Indietro
+              </Button>
+              {step < 4 ? (
+                <Button key="continue" type="button" onClick={goForward}>
+                  Continua
+                  <ChevronRight className="size-4" aria-hidden="true" />
+                </Button>
+              ) : (
+                <Button key="submit" type="submit" disabled={pending}>
+                  {pending ? <LoaderCircle className="size-4 animate-spin" aria-hidden="true" /> : <Check className="size-4" aria-hidden="true" />}
+                  {pending ? "Invio in corso…" : "Conferma iscrizione"}
+                </Button>
+              )}
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function emptyGuardian(type: "A" | "B") {
+  return {
+    type,
+    firstName: "",
+    lastName: "",
+    birthDate: "",
+    birthPlace: "",
+    birthProvince: "",
+    fiscalCode: "",
+    address: "",
+    city: "",
+    province: "",
+    email: "",
+    phone: "",
+  };
+}
+
+interface GuardianFieldsProps {
+  index: 0 | 1;
+  register: ReturnType<typeof useForm<ApplicantRegistrationInput>>["register"];
+  errorFor: (name: FieldPath<ApplicantRegistrationInput>) => string | undefined;
+}
+
+function GuardianFields({ index, register, errorFor }: GuardianFieldsProps) {
+  const prefix = `guardians.${index}` as const;
+  const field = (name: string) => `${prefix}.${name}` as FieldPath<ApplicantRegistrationInput>;
+
+  return (
+    <div className="grid gap-5 sm:grid-cols-2">
+      <input type="hidden" value={index === 0 ? "A" : "B"} {...register(field("type"))} />
+      <FormField label="Nome" name={field("firstName")} error={errorFor(field("firstName"))}>
+        <Input id={field("firstName")} autoComplete="given-name" {...register(field("firstName"))} />
+      </FormField>
+      <FormField label="Cognome" name={field("lastName")} error={errorFor(field("lastName"))}>
+        <Input id={field("lastName")} autoComplete="family-name" {...register(field("lastName"))} />
+      </FormField>
+      <FormField label="Data di nascita" name={field("birthDate")} error={errorFor(field("birthDate"))}>
+        <Input id={field("birthDate")} type="date" {...register(field("birthDate"))} />
+      </FormField>
+      <FormField label="Luogo di nascita" name={field("birthPlace")} error={errorFor(field("birthPlace"))}>
+        <Input id={field("birthPlace")} {...register(field("birthPlace"))} />
+      </FormField>
+      <FormField label="Provincia di nascita" name={field("birthProvince")} error={errorFor(field("birthProvince"))}>
+        <Input id={field("birthProvince")} maxLength={2} {...register(field("birthProvince"))} />
+      </FormField>
+      <FormField label="Codice Fiscale" name={field("fiscalCode")} error={errorFor(field("fiscalCode"))}>
+        <Input id={field("fiscalCode")} autoCapitalize="characters" {...register(field("fiscalCode"))} />
+      </FormField>
+      <FormField label="Indirizzo di residenza" name={field("address")} error={errorFor(field("address"))} className="sm:col-span-2">
+        <Input id={field("address")} autoComplete="street-address" {...register(field("address"))} />
+      </FormField>
+      <FormField label="Comune di residenza" name={field("city")} error={errorFor(field("city"))}>
+        <Input id={field("city")} autoComplete="address-level2" {...register(field("city"))} />
+      </FormField>
+      <FormField label="Provincia di residenza" name={field("province")} error={errorFor(field("province"))}>
+        <Input id={field("province")} maxLength={2} autoComplete="address-level1" {...register(field("province"))} />
+      </FormField>
+      <FormField label="Email" name={field("email")} error={errorFor(field("email"))}>
+        <Input id={field("email")} type="email" inputMode="email" autoComplete="email" {...register(field("email"))} />
+      </FormField>
+      <FormField label="Cellulare" name={field("phone")} error={errorFor(field("phone"))}>
+        <Input id={field("phone")} type="tel" inputMode="tel" autoComplete="tel" {...register(field("phone"))} />
+      </FormField>
+    </div>
+  );
+}
+
+function RegistrationSummary({ values }: { values: ApplicantRegistrationInput }) {
+  return (
+    <div className="space-y-6">
+      <SummarySection title="Minore" rows={[
+        ["Nome", `${values.minor.firstName} ${values.minor.lastName}`],
+        ["Data di nascita", values.minor.birthDate],
+        ["Sesso", values.minor.gender === "M" ? "Maschio" : "Femmina"],
+        ["Codice Fiscale", values.minor.fiscalCode],
+      ]} />
+      {values.guardians.map((guardian, index) => (
+        <SummarySection
+          key={guardian.type}
+          title={`Genitore ${index === 0 ? "A" : "B"}`}
+          rows={[
+            ["Nome", `${guardian.firstName} ${guardian.lastName}`],
+            ["Email", guardian.email],
+            ["Cellulare", guardian.phone],
+            ["Residenza", `${guardian.address}, ${guardian.city} (${guardian.province})`],
+          ]}
+        />
+      ))}
+      <p className="rounded-xl bg-emerald-50 p-4 text-sm text-emerald-950">
+        Consenso privacy versione <strong>{values.privacyPolicyVersion}</strong> confermato.
+      </p>
+    </div>
+  );
+}
+
+function SummarySection({ title, rows }: { title: string; rows: string[][] }) {
+  return (
+    <section aria-labelledby={`summary-${title.replaceAll(" ", "-")}`}>
+      <h3 id={`summary-${title.replaceAll(" ", "-")}`} className="font-slab text-lg font-bold text-violet-950">
+        {title}
+      </h3>
+      <dl className="mt-3 grid gap-3 rounded-2xl bg-stone-50 p-4 sm:grid-cols-2">
+        {rows.map(([label, value]) => (
+          <div key={label}>
+            <dt className="text-xs font-bold uppercase tracking-wide text-stone-500">{label}</dt>
+            <dd className="mt-1 break-words text-sm text-stone-900">{value || "—"}</dd>
+          </div>
+        ))}
+      </dl>
+    </section>
+  );
+}
+
+function FormField({
+  label,
+  name,
+  error,
+  hint,
+  className,
+  children,
+}: {
+  label: string;
+  name: string;
+  error?: string;
+  hint?: string;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  const errorId = `${name}-error`;
+  const hintId = `${name}-hint`;
+  const describedBy = [hint ? hintId : null, error ? errorId : null].filter(Boolean).join(" ") || undefined;
+  const control = isValidElement<Record<string, unknown>>(children)
+    ? cloneElement(children, {
+        "aria-invalid": error ? true : undefined,
+        "aria-describedby": describedBy,
+      })
+    : children;
+  return (
+    <div className={cn("space-y-2", className)}>
+      <label className="block text-sm font-bold text-stone-800" htmlFor={name}>
+        {label}
+      </label>
+      {control}
+      {hint && <p id={hintId} className="text-xs leading-5 text-stone-500">{hint}</p>}
+      {error && <FieldError id={errorId} message={error} />}
+    </div>
+  );
+}
+
+function FieldError({ id, message }: { id: string; message: string }) {
+  return <p id={id} role="alert" className="text-sm font-medium text-red-700">{message}</p>;
+}
