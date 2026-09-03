@@ -1,36 +1,101 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CRM Lista d'Attesa — AGESCI Adelfia 1
 
-## Getting Started
+Applicazione mobile-first per iscrizione pubblica e gestione riservata della lista d'attesa. Implementa il perimetro V1 P0/P1 della specifica: ordine cronologico immutabile, quattro soli stati, ciclo dell'anno associativo, statistiche anonime, Better Auth con RBAC, Power Automate, import e retention.
 
-First, run the development server:
+## Stack
 
-```bash
+- Next.js 16.3.4 e React 19.2.8
+- TypeScript 6.0.3
+- Tailwind CSS 4.3.3, componenti in stile shadcn/ui e font Roboto/Roboto Slab self-hosted con Fontsource 5.3.0
+- PostgreSQL 18 e Prisma 7.10.0
+- Better Auth 1.7.2
+- Zod 4.5.4, React Hook Form 7.87.0
+- Vitest 4.1.11 e Playwright 1.62.1
+
+TypeScript 7 e Prisma 8 non sono usati nella V1: al momento dell'implementazione non erano compatibili rispettivamente con la toolchain ESLint di Next e con l'adapter Prisma documentato da Better Auth. Le versioni sono bloccate esattamente nel lockfile.
+
+## Avvio locale
+
+Prerequisiti: Node.js 24 LTS o successivo, npm 11 e Docker con Compose.
+
+```powershell
+Copy-Item .env.example .env
+docker compose up -d
+npm install
+npm run prisma:generate
+npm run db:migrate
+npm run db:seed
+npm run admin:bootstrap
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Prima di `db:seed`, valorizzare `PRIVACY_POLICY_VERSION` e `PRIVACY_POLICY_URL` con il documento reale approvato dal Gruppo. Senza una privacy attiva la pagina pubblica resta intenzionalmente bloccata. Prima di `admin:bootstrap`, valorizzare tutti i campi `BOOTSTRAP_ADMIN_*`, inclusa una password di almeno 12 caratteri.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+L'applicazione sarà disponibile su `http://localhost:3000`; PostgreSQL locale usa la porta `5432` e le credenziali di sviluppo presenti in `.env.example`.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Configurazione
 
-## Learn More
+I segreti non vanno mai committati. Generare valori indipendenti e casuali di almeno 32 caratteri per:
 
-To learn more about Next.js, take a look at the following resources:
+- `BETTER_AUTH_SECRET`
+- `IDENTIFIER_HMAC_KEY`
+- `RATE_LIMIT_HMAC_KEY`
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+`BETTER_AUTH_URL` deve essere l'URL pubblico dell'app. `POWER_AUTOMATE_WEBHOOK_URL` deve essere HTTPS in produzione; se assente, le operazioni restano valide e la consegna viene registrata come fallita. Il payload è documentato in [docs/power-automate.md](docs/power-automate.md).
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Flussi implementati
 
-## Deploy on Vercel
+- Iscrizione pubblica in sei passi, con due tutori, consenso/versione privacy e conferma pratica.
+- CF normalizzato, unico e protetto da registro anti-reiscrizione HMAC.
+- Rate limiting pubblico persistente: 5 tentativi ogni 15 minuti, senza conservare IP in chiaro.
+- Login/logout, sessione di 7 giorni, reset e cambio password, profilo personale.
+- Ruoli `ADMIN` (Capo Gruppo) e `STAFF` (Capo), verificati in ogni Server Action.
+- Lista filtrabile/paginata e ricerca estesa, sempre ordinata per `createdAt, id` crescente.
+- Dettaglio, modifica esplicita, cambio stato e cancellazione con conferma.
+- Inviti Capi monouso da 24 ore, reinvio, modifica, reset ed eliminazione completa.
+- Anno associativo separato dall'apertura chiamate; candidati calcolati solo dall'anno di nascita.
+- Chiusura chiamate con snapshot anonimo precedente al reset degli inevasi.
+- Dashboard, storico statistico e mailing list interna.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Import storico
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Il formato e la procedura sono in [docs/importazione-lista-attesa.md](docs/importazione-lista-attesa.md). La simulazione è predefinita:
+
+```powershell
+npm run import:waiting-list -- .\dati.xlsx --privacy-version=2026.1 --report=report.json
+npm run import:waiting-list -- .\dati.xlsx --privacy-version=2026.1 --apply --report=report.json
+```
+
+## Retention
+
+Anche la retention parte in simulazione. Usa `RETENTION_DAYS`, la massima età configurata e mantiene solo l'HMAC dei rifiutati:
+
+```powershell
+npm run retention
+npm run retention -- --apply
+```
+
+Programmare il comando in produzione solo dopo aver verificato il report dry-run e il backup.
+
+## Qualità
+
+```powershell
+npm test
+npm run test:coverage
+npm run typecheck
+npm run lint
+npm run test:e2e
+npm audit
+```
+
+`npm run test:e2e` esegue prima un build di produzione. Gli E2E backoffice richiedono `E2E_ADMIN_EMAIL` e `E2E_ADMIN_PASSWORD` su un database di test isolato. Le evidenze TDD sono riepilogate in [docs/testing/v1-tdd.md](docs/testing/v1-tdd.md).
+
+## Produzione
+
+1. Configurare PostgreSQL gestito con backup, TLS e utenza a privilegi minimi.
+2. Impostare le variabili d'ambiente e il webhook Power Automate.
+3. Eseguire `npm ci`, `npm run db:deploy`, `npm run db:seed` e `npm run build`.
+4. Creare il primo Admin una sola volta con `npm run admin:bootstrap`.
+5. Verificare HTTPS, email, privacy, retention e import su staging prima del go-live.
+
+Le migrazioni versionate sono in `prisma/migrations`. Non usare `prisma migrate dev` in produzione: usare `prisma migrate deploy` (aggiungibile alla pipeline di deploy).
