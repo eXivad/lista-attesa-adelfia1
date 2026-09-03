@@ -1,0 +1,46 @@
+import type { ApplicantRegistrationInput } from "@/modules/applicants/schemas/registration";
+
+export const validRegistrationInput = {
+  minor: {
+    firstName: "Mario",
+    lastName: "Rossi",
+    gender: "M",
+    birthDate: "2018-05-12",
+    birthPlace: "Bari",
+    birthProvince: "BA",
+    fiscalCode: "RSSMRA18E12A662X",
+    notes: "Fratello già nel gruppo",
+  },
+  guardians: [
+    {
+      type: "A",
+      firstName: "Anna",
+      lastName: "Verdi",
+      birthDate: "1985-03-01",
+      birthPlace: "Bari",
+      birthProvince: "BA",
+      fiscalCode: "VRDNNA85C41A662Z",
+      address: "Via Roma 1",
+      city: "Adelfia",
+      province: "BA",
+      email: "anna@example.it",
+      phone: "+39 333 1234567",
+    },
+    {
+      type: "B",
+      firstName: "Luigi",
+      lastName: "Rossi",
+      birthDate: "1983-08-22",
+      birthPlace: "Bari",
+      birthProvince: "BA",
+      fiscalCode: "RSSLGU83M22A662Y",
+      address: "Via Roma 1",
+      city: "Adelfia",
+      province: "BA",
+      email: "luigi@example.it",
+      phone: "+39 333 7654321",
+    },
+  ],
+  privacyAccepted: true,
+  privacyPolicyVersion: "2026.1",
+} satisfies ApplicantRegistrationInput;

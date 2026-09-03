@@ -1,0 +1,86 @@
+import { expect, test, type Page } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
+
+test("home pubblica accessibile e percorso iscrizione visibile", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    "Un primo passo verso una nuova avventura.",
+  );
+  await expect(page.getByRole("link", { name: /iscrizione/i })).toBeVisible();
+  const results = await new AxeBuilder({ page }).analyze();
+  expect(results.violations).toEqual([]);
+});
+
+test("pagina iscrizione espone form oppure blocco configurazione esplicito", async ({ page }) => {
+  await page.goto("/iscrizione");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(/^Iscrizion[ei]/);
+  const formStart = page.getByRole("heading", { name: "Dati del minore" });
+  const unavailable = page.getByRole("heading", { name: /temporaneamente non disponibili/i });
+  await expect(formStart.or(unavailable)).toBeVisible();
+});
+
+test("un visitatore anonimo non può accedere al backoffice", async ({ page }) => {
+  await page.goto("/dashboard");
+  await expect(page).toHaveURL(/\/login\?next=%2Fdashboard/);
+  await expect(page.getByRole("heading", { name: /Accedi all.area Capi/ })).toBeVisible();
+});
+
+test("completa l'iscrizione pubblica in sei passi", async ({ page }) => {
+  test.slow();
+  const suffix = Date.now().toString(36).toUpperCase().padStart(13, "0").slice(-13);
+  const minorFiscalCode = `E2E${suffix}`;
+
+  await page.goto("/iscrizione");
+  await page.waitForLoadState("networkidle");
+
+  await page.getByLabel("Nome", { exact: true }).fill("Mario");
+  await page.getByLabel("Cognome", { exact: true }).fill("Rossi");
+  await page.getByLabel("Data di nascita", { exact: true }).fill("2018-05-12");
+  await page.getByLabel("Luogo di nascita", { exact: true }).fill("Bari");
+  await page.getByLabel("Provincia di nascita", { exact: true }).fill("BA");
+  await page.getByLabel("Codice Fiscale", { exact: true }).fill(minorFiscalCode);
+  await page.getByRole("button", { name: "Continua" }).click();
+
+  await fillGuardian(page, {
+    firstName: "Anna",
+    lastName: "Verdi",
+    fiscalCode: "VRDNNA85C41A662Z",
+    email: `anna.${suffix.toLowerCase()}@example.it`,
+  });
+  await page.getByRole("button", { name: "Continua" }).click();
+
+  await fillGuardian(page, {
+    firstName: "Luigi",
+    lastName: "Rossi",
+    fiscalCode: "RSSLGU83M22A662Y",
+    email: `luigi.${suffix.toLowerCase()}@example.it`,
+  });
+  await page.getByRole("button", { name: "Continua" }).click();
+
+  await page.getByRole("checkbox", { name: /Ho letto e accetto/ }).check();
+  await page.getByRole("button", { name: "Continua" }).click();
+  await expect(page.getByRole("heading", { name: "Riepilogo" })).toBeVisible();
+  const submitButton = page.getByRole("button", { name: "Conferma iscrizione" });
+  await expect(submitButton).toBeVisible();
+  await submitButton.click();
+
+  await expect(page.getByText("Iscrizione completata")).toBeVisible();
+  await expect(page.getByText(/^LA-\d{4}-\d{6}$/)).toBeVisible();
+});
+
+async function fillGuardian(
+  page: Page,
+  guardian: { firstName: string; lastName: string; fiscalCode: string; email: string },
+) {
+  await page.getByLabel("Nome", { exact: true }).fill(guardian.firstName);
+  await page.getByLabel("Cognome", { exact: true }).fill(guardian.lastName);
+  await page.getByLabel("Data di nascita", { exact: true }).fill("1985-03-01");
+  await page.getByLabel("Luogo di nascita", { exact: true }).fill("Bari");
+  await page.getByLabel("Provincia di nascita", { exact: true }).fill("BA");
+  await page.getByLabel("Codice Fiscale", { exact: true }).fill(guardian.fiscalCode);
+  await page.getByLabel("Indirizzo di residenza").fill("Via Roma 1");
+  await page.getByLabel("Comune di residenza").fill("Adelfia");
+  await page.getByLabel("Provincia di residenza").fill("BA");
+  await page.getByLabel("Email").fill(guardian.email);
+  await page.getByLabel("Cellulare").fill("+39 333 1234567");
+}
