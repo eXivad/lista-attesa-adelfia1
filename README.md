@@ -90,6 +90,14 @@ pnpm audit
 
 `pnpm run test:e2e` esegue prima un build di produzione. Gli E2E backoffice richiedono `E2E_ADMIN_EMAIL` e `E2E_ADMIN_PASSWORD` su un database di test isolato. Le evidenze TDD sono riepilogate in [docs/testing/v1-tdd.md](docs/testing/v1-tdd.md).
 
+## Automazione GitHub
+
+I workflow in `.github/workflows` eseguono quality gate, E2E con PostgreSQL isolato, audit delle dipendenze e analisi di sicurezza. Dependabot aggiorna sia pacchetti npm/pnpm sia GitHub Actions sul branch `dev`.
+
+CodeQL e Dependency Review sono predisposti ma si attivano solo impostando la variabile repository `ENABLE_GITHUB_CODE_SECURITY=true`, dopo aver abilitato GitHub Code Security/Advanced Security nelle impostazioni del repository. Le Actions sono bloccate a commit SHA immutabili e aggiornate da Dependabot.
+
+Lo stato puntuale delle task della specifica è documentato in [docs/backlog-p0-p2.md](docs/backlog-p0-p2.md).
+
 ## Produzione
 
 1. Configurare PostgreSQL gestito con backup, TLS e utenza a privilegi minimi.

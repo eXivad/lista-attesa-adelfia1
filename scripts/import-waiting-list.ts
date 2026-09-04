@@ -17,7 +17,7 @@ async function main() {
   const apply = process.argv.includes("--apply");
 
   if (!fileArgument || !privacyVersion) {
-    console.error("Uso: npm run import:waiting-list -- <file.csv|file.xlsx> --privacy-version=VERSION [--apply] [--report=report.json]");
+    console.error("Uso: pnpm run import:waiting-list -- <file.csv|file.xlsx> --privacy-version=VERSION [--apply] [--report=report.json]");
     process.exitCode = 1;
     return;
   }
