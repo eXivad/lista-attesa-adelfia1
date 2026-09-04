@@ -92,9 +92,11 @@ pnpm audit
 
 ## Automazione GitHub
 
-I workflow in `.github/workflows` eseguono quality gate, E2E con PostgreSQL isolato, audit delle dipendenze e analisi di sicurezza. Dependabot aggiorna sia pacchetti npm/pnpm sia GitHub Actions sul branch `dev`.
+I workflow in `.github/workflows` eseguono quality gate, E2E con PostgreSQL isolato, audit delle dipendenze e analisi di sicurezza esclusivamente sulle pull request indirizzate a `main`. I normali push su `dev` o `main` non avviano workflow. Dependabot aggiorna sia pacchetti npm/pnpm sia GitHub Actions sul branch `dev`.
 
 CodeQL e Dependency Review sono predisposti ma si attivano solo impostando la variabile repository `ENABLE_GITHUB_CODE_SECURITY=true`, dopo aver abilitato GitHub Code Security/Advanced Security nelle impostazioni del repository. Le Actions sono bloccate a commit SHA immutabili e aggiornate da Dependabot.
+
+pnpm applica una finestra di sicurezza di 24 ore alle nuove release. `@types/react-dom@19.2.7`, gia presente nel precedente lockfile npm e verificato tramite lo stesso hash di integrita, e escluso puntualmente dalla finestra per consentire l'installazione riproducibile in CI.
 
 Lo stato puntuale delle task della specifica è documentato in [docs/backlog-p0-p2.md](docs/backlog-p0-p2.md).
 

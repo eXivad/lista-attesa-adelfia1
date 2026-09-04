@@ -1,21 +1,12 @@
 name: Security Audit
 
 on:
-  push:
-    branches: [main, dev]
-    paths:
-      - package.json
-      - pnpm-lock.yaml
-      - pnpm-workspace.yaml
   pull_request:
-    branches: [main, dev]
+    branches: [main]
     paths:
       - package.json
       - pnpm-lock.yaml
       - pnpm-workspace.yaml
-  schedule:
-    - cron: "17 5 * * 1"
-  workflow_dispatch:
 
 permissions:
   contents: read
