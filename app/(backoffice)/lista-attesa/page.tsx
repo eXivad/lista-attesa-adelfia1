@@ -38,27 +38,88 @@ export default async function ApplicantListPage({ searchParams }: ApplicantListP
 
       <Card>
         <CardContent className="p-4 sm:p-5">
-          <form method="get" className="grid gap-3 lg:grid-cols-[minmax(14rem,1fr)_10rem_10rem_10rem_auto]">
-            <label className="relative">
-              <span className="sr-only">Cerca</span>
-              <Search className="pointer-events-none absolute left-3 top-3.5 size-5 text-stone-400" aria-hidden="true" />
-              <input className="form-control pl-10" name="query" defaultValue={filters.query} placeholder="Nome, CF, genitore, telefono…" />
+          <form
+            method="get"
+            className="grid gap-3 lg:grid-cols-[minmax(14rem,1fr)_10rem_10rem_10rem_auto]"
+          >
+            <label className="space-y-1">
+              <span className="block text-xs font-medium text-stone-600">
+                Cerca
+              </span>
+
+              <div className="relative">
+                <Search
+                  className="pointer-events-none absolute left-3 top-1/2 size-5 -translate-y-1/2 text-stone-400"
+                  aria-hidden="true"
+                />
+
+                <input
+                  className="form-control w-full !pl-11"
+                  name="query"
+                  defaultValue={filters.query}
+                  placeholder="Nome, CF, genitore, telefono…"
+                />
+              </div>
             </label>
-            <FilterSelect name="gender" label="Sesso" defaultValue={filters.gender} options={[["", "Entrambi"], ["M", "Maschi"], ["F", "Femmine"]]} />
-            <label>
-              <span className="sr-only">Anno di nascita</span>
-              <input className="form-control" type="number" name="birthYear" min="1900" max="2200" defaultValue={filters.birthYear} placeholder="Anno nascita" />
+
+            <div className="space-y-1">
+              <span className="block text-xs font-medium text-stone-600">
+                Sesso
+              </span>
+
+              <FilterSelect
+                name="gender"
+                label="Sesso"
+                defaultValue={filters.gender}
+                options={[
+                  ["", "Entrambi"],
+                  ["M", "Maschi"],
+                  ["F", "Femmine"],
+                ]}
+              />
+            </div>
+
+            <label className="space-y-1">
+              <span className="block text-xs font-medium text-stone-600">
+                Anno di nascita
+              </span>
+
+              <input
+                className="form-control"
+                type="number"
+                name="birthYear"
+                min="1900"
+                max="2200"
+                defaultValue={filters.birthYear}
+                placeholder="Anno nascita"
+              />
             </label>
-            <FilterSelect
-              name="status"
-              label="Stato"
-              defaultValue={filters.status}
-              options={[["", "Tutti gli stati"], ["IN_ATTESA", "In attesa"], ["DA_CHIAMARE", "Da chiamare"], ["ACCETTATO", "Accettato"], ["RIFIUTATO", "Rifiutato"]]}
-            />
-            <Button type="submit" className="w-full lg:w-auto">
-              <SlidersHorizontal className="size-4" aria-hidden="true" />
-              Filtra
-            </Button>
+
+            <div className="space-y-1">
+              <span className="block text-xs font-medium text-stone-600">
+                Stato iscrizione
+              </span>
+
+              <FilterSelect
+                name="status"
+                label="Stato"
+                defaultValue={filters.status}
+                options={[
+                  ["", "Tutti gli stati"],
+                  ["IN_ATTESA", "In attesa"],
+                  ["DA_CHIAMARE", "Da chiamare"],
+                  ["ACCETTATO", "Accettato"],
+                  ["RIFIUTATO", "Rifiutato"],
+                ]}
+              />
+            </div>
+
+            <div className="flex items-end">
+              <Button type="submit" className="w-full lg:w-auto">
+                <SlidersHorizontal className="size-4" aria-hidden="true" />
+                Filtra
+              </Button>
+            </div>
           </form>
         </CardContent>
       </Card>
@@ -115,13 +176,52 @@ export default async function ApplicantListPage({ searchParams }: ApplicantListP
         </>
       )}
 
-      <nav className="flex items-center justify-between gap-4" aria-label="Paginazione">
-        <Button asChild={filters.page > 1} variant="outline" disabled={filters.page <= 1}>
-          {filters.page > 1 ? <Link href={pageHref(rawFilters, filters.page - 1)}><ChevronLeft className="size-4" aria-hidden="true" />Precedente</Link> : <span><ChevronLeft className="size-4" aria-hidden="true" />Precedente</span>}
+      <nav
+        className="flex items-center justify-between gap-4"
+        aria-label="Paginazione"
+      >
+        <Button
+          asChild={filters.page > 1}
+          variant="outline"
+          disabled={filters.page <= 1}
+        >
+          {filters.page > 1 ? (
+            <Link href={pageHref(rawFilters, filters.page - 1)}>
+              <span className="inline-flex items-center justify-center gap-3">
+                <ChevronLeft className="size-4 shrink-0" aria-hidden="true" />
+                <span>Precedente</span>
+              </span>
+            </Link>
+          ) : (
+            <span className="inline-flex items-center justify-center gap-3">
+              <ChevronLeft className="size-4 shrink-0" aria-hidden="true" />
+              <span>Precedente</span>
+            </span>
+          )}
         </Button>
-        <p className="text-sm font-bold text-stone-700">Pagina {filters.page} di {result.pageCount}</p>
-        <Button asChild={filters.page < result.pageCount} variant="outline" disabled={filters.page >= result.pageCount}>
-          {filters.page < result.pageCount ? <Link href={pageHref(rawFilters, filters.page + 1)}>Successiva<ChevronRight className="size-4" aria-hidden="true" /></Link> : <span>Successiva<ChevronRight className="size-4" aria-hidden="true" /></span>}
+
+        <p className="text-sm font-bold text-stone-700">
+          Pagina {filters.page} di {result.pageCount}
+        </p>
+
+        <Button
+          asChild={filters.page < result.pageCount}
+          variant="outline"
+          disabled={filters.page >= result.pageCount}
+        >
+          {filters.page < result.pageCount ? (
+            <Link href={pageHref(rawFilters, filters.page + 1)}>
+              <span className="inline-flex items-center justify-center gap-3">
+                <span>Successiva</span>
+                <ChevronRight className="size-4 shrink-0" aria-hidden="true" />
+              </span>
+            </Link>
+          ) : (
+            <span className="inline-flex items-center justify-center gap-3">
+              <span>Successiva</span>
+              <ChevronRight className="size-4 shrink-0" aria-hidden="true" />
+            </span>
+          )}
         </Button>
       </nav>
     </div>
