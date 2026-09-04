@@ -16,20 +16,20 @@ TypeScript 7 e Prisma 8 non sono usati nella V1: al momento dell'implementazione
 
 ## Avvio locale
 
-Prerequisiti: Node.js 24 LTS o successivo, npm 11 e Docker con Compose.
+Prerequisiti: Node.js 24 LTS o successivo, pnpm 12.3.2 e Docker con Compose.
 
 ```powershell
 Copy-Item .env.example .env
 docker compose up -d
-npm install
-npm run prisma:generate
-npm run db:migrate
-npm run db:seed
-npm run admin:bootstrap
-npm run dev
+pnpm install
+pnpm run prisma:generate
+pnpm run db:migrate
+pnpm run db:seed
+pnpm run admin:bootstrap
+pnpm run dev
 ```
 
-Prima di `db:seed`, valorizzare `PRIVACY_POLICY_VERSION` e `PRIVACY_POLICY_URL` con il documento reale approvato dal Gruppo. Senza una privacy attiva la pagina pubblica resta intenzionalmente bloccata. Prima di `admin:bootstrap`, valorizzare tutti i campi `BOOTSTRAP_ADMIN_*`, inclusa una password di almeno 12 caratteri.
+Prima di `db:seed`, valorizzare `PRIVACY_POLICY_VERSION` e `PRIVACY_POLICY_URL` con il documento reale approvato dal Gruppo. `PRIVACY_POLICY_URL` deve essere un URL assoluto che inizi con `http://` o `https://`. Senza una privacy attiva la pagina pubblica resta intenzionalmente bloccata. Prima di `admin:bootstrap`, valorizzare tutti i campi `BOOTSTRAP_ADMIN_*`, inclusa una password di almeno 12 caratteri.
 
 L'applicazione sarà disponibile su `http://localhost:3000`; PostgreSQL locale usa la porta `5432` e le credenziali di sviluppo presenti in `.env.example`.
 
@@ -62,8 +62,8 @@ I segreti non vanno mai committati. Generare valori indipendenti e casuali di al
 Il formato e la procedura sono in [docs/importazione-lista-attesa.md](docs/importazione-lista-attesa.md). La simulazione è predefinita:
 
 ```powershell
-npm run import:waiting-list -- .\dati.xlsx --privacy-version=2026.1 --report=report.json
-npm run import:waiting-list -- .\dati.xlsx --privacy-version=2026.1 --apply --report=report.json
+pnpm run import:waiting-list -- .\dati.xlsx --privacy-version=2026.1 --report=report.json
+pnpm run import:waiting-list -- .\dati.xlsx --privacy-version=2026.1 --apply --report=report.json
 ```
 
 ## Retention
@@ -71,8 +71,8 @@ npm run import:waiting-list -- .\dati.xlsx --privacy-version=2026.1 --apply --re
 Anche la retention parte in simulazione. Usa `RETENTION_DAYS`, la massima età configurata e mantiene solo l'HMAC dei rifiutati:
 
 ```powershell
-npm run retention
-npm run retention -- --apply
+pnpm run retention
+pnpm run retention -- --apply
 ```
 
 Programmare il comando in produzione solo dopo aver verificato il report dry-run e il backup.
@@ -80,22 +80,22 @@ Programmare il comando in produzione solo dopo aver verificato il report dry-run
 ## Qualità
 
 ```powershell
-npm test
-npm run test:coverage
-npm run typecheck
-npm run lint
-npm run test:e2e
-npm audit
+pnpm test
+pnpm run test:coverage
+pnpm run typecheck
+pnpm run lint
+pnpm run test:e2e
+pnpm audit
 ```
 
-`npm run test:e2e` esegue prima un build di produzione. Gli E2E backoffice richiedono `E2E_ADMIN_EMAIL` e `E2E_ADMIN_PASSWORD` su un database di test isolato. Le evidenze TDD sono riepilogate in [docs/testing/v1-tdd.md](docs/testing/v1-tdd.md).
+`pnpm run test:e2e` esegue prima un build di produzione. Gli E2E backoffice richiedono `E2E_ADMIN_EMAIL` e `E2E_ADMIN_PASSWORD` su un database di test isolato. Le evidenze TDD sono riepilogate in [docs/testing/v1-tdd.md](docs/testing/v1-tdd.md).
 
 ## Produzione
 
 1. Configurare PostgreSQL gestito con backup, TLS e utenza a privilegi minimi.
 2. Impostare le variabili d'ambiente e il webhook Power Automate.
-3. Eseguire `npm ci`, `npm run db:deploy`, `npm run db:seed` e `npm run build`.
-4. Creare il primo Admin una sola volta con `npm run admin:bootstrap`.
+3. Eseguire `pnpm install --frozen-lockfile`, `pnpm run db:deploy`, `pnpm run db:seed` e `pnpm run build`.
+4. Creare il primo Admin una sola volta con `pnpm run admin:bootstrap`.
 5. Verificare HTTPS, email, privacy, retention e import su staging prima del go-live.
 
 Le migrazioni versionate sono in `prisma/migrations`. Non usare `prisma migrate dev` in produzione: usare `prisma migrate deploy` (aggiungibile alla pipeline di deploy).

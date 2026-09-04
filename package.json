@@ -2,7 +2,7 @@
   "name": "lista-attesa-adelfia1",
   "version": "0.1.0",
   "private": true,
-  "packageManager": "npm@11.6.2",
+  "packageManager": "pnpm@12.3.2",
   "engines": {
     "node": ">=24.15.0"
   },
@@ -15,8 +15,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:e2e": "npm run build && playwright test",
-    "test:e2e:ui": "npm run build && playwright test --ui",
+    "test:e2e": "pnpm run build && playwright test",
+    "test:e2e:ui": "pnpm run build && playwright test --ui",
     "prisma:generate": "prisma generate",
     "prisma:validate": "prisma validate",
     "db:migrate": "prisma migrate dev",
@@ -74,9 +74,5 @@
     "tsx": "4.23.13",
     "typescript": "6.0.3",
     "vitest": "4.1.11"
-  },
-  "overrides": {
-    "deepmerge-ts": "8.0.2",
-    "mysql2": "3.24.3"
   }
 }

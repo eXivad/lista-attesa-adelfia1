@@ -16,7 +16,7 @@ export default defineConfig({
     { name: "desktop-chrome", use: { ...devices["Desktop Chrome"] } },
   ],
   webServer: {
-    command: "npm.cmd run start",
+    command: "next start",
     url: "http://127.0.0.1:3000",
     reuseExistingServer: false,
     timeout: 120_000,

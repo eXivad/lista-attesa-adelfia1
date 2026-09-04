@@ -16,11 +16,11 @@ Copertura funzionale principale:
 Comandi di verifica:
 
 ```powershell
-npm test
-npm run test:coverage
-npm run typecheck
-npm run lint
-npm run test:e2e
+pnpm test
+pnpm run test:coverage
+pnpm run typecheck
+pnpm run lint
+pnpm run test:e2e
 ```
 
 I test che richiedono PostgreSQL e credenziali reali sono configurati ma devono essere eseguiti su un database di test isolato. Gli E2E backoffice vengono saltati se `E2E_ADMIN_EMAIL` e `E2E_ADMIN_PASSWORD` non sono presenti.
