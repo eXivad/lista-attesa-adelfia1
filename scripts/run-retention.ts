@@ -15,7 +15,15 @@ async function main() {
   try {
     const result = await new RetentionService({ repository: new PrismaRetentionRepository(client), hmacSecret }).run({ retentionDays, apply });
     const expiredRateBuckets = apply ? (await client.rateLimitBucket.deleteMany({ where: { expiresAt: { lt: new Date() } } })).count : 0;
-    console.log(JSON.stringify({ ...result, expiredRateBucketsDeleted: expiredRateBuckets }, null, 2));
+    const mailQuotaCutoff = new Date(Date.now() - 30 * 24 * 60 * 60_000);
+    const expiredMailQuotaReservations = apply
+      ? (await client.mailQuotaReservation.deleteMany({ where: { createdAt: { lt: mailQuotaCutoff } } })).count
+      : 0;
+    console.log(JSON.stringify({
+      ...result,
+      expiredRateBucketsDeleted: expiredRateBuckets,
+      expiredMailQuotaReservationsDeleted: expiredMailQuotaReservations,
+    }, null, 2));
     if (!apply && result.candidates > 0) console.log("Simulazione completata. Riesegui con --apply solo dopo aver verificato gli ID candidati.");
   } finally {
     await client.$disconnect();

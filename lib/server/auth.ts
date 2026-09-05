@@ -5,17 +5,13 @@ import { betterAuth } from "better-auth/minimal";
 import { nextCookies } from "better-auth/next-js";
 import { admin } from "better-auth/plugins";
 
-import { PowerAutomateMailProvider } from "@/providers/mail/power-automate-mail-provider";
+import { getMailProvider } from "./mail";
 import { getAuthEnvironment } from "./environment";
 import { getPrismaClient } from "./prisma";
 
 function createAuth() {
   const environment = getAuthEnvironment();
-  const mailProvider = new PowerAutomateMailProvider({
-    webhookUrl: environment.POWER_AUTOMATE_WEBHOOK_URL,
-    bearerToken: environment.POWER_AUTOMATE_BEARER_TOKEN,
-    sender: environment.MAIL_FROM,
-  });
+  const mailProvider = getMailProvider();
 
   return betterAuth({
     appName: "Lista d’attesa",

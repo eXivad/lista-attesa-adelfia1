@@ -344,6 +344,15 @@ model MailOutbox {
   @@index([status, createdAt])
 }
 
+model MailQuotaReservation {
+  id             String   @id @db.VarChar(26)
+  senderKey      String   @db.Char(64)
+  recipientCount Int
+  createdAt      DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([senderKey, createdAt])
+}
+
 model RateLimitBucket {
   keyHash     String   @id @db.Char(64)
   windowStart DateTime @db.Timestamptz(3)

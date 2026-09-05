@@ -6,12 +6,22 @@ const databaseEnvironmentSchema = z.object({
   }),
 });
 
-const registrationEnvironmentSchema = databaseEnvironmentSchema.extend({
+const optionalEmail = z.union([z.literal(""), z.email()]).transform((value) => value.toLowerCase());
+
+const mailEnvironmentSchema = z.object({
+  GMAIL_USER: optionalEmail.default(""),
+  GMAIL_OAUTH_CLIENT_ID: z.string().trim().default(""),
+  GMAIL_OAUTH_CLIENT_SECRET: z.string().trim().default(""),
+  GMAIL_OAUTH_REFRESH_TOKEN: z.string().trim().default(""),
+  GMAIL_DAILY_RECIPIENT_LIMIT: z.coerce.number().int().min(1).max(2_000).default(450),
+  GMAIL_MAX_RECIPIENTS_PER_MESSAGE: z.coerce.number().int().min(1).max(100).default(20),
+  MAIL_FROM_NAME: z.string().trim().min(1).max(120).default("AGESCI Adelfia 1"),
+  MAIL_REPLY_TO: optionalEmail.default(""),
+});
+
+const registrationEnvironmentSchema = databaseEnvironmentSchema.merge(mailEnvironmentSchema).extend({
   IDENTIFIER_HMAC_KEY: z.string().min(32),
   RATE_LIMIT_HMAC_KEY: z.string().min(32),
-  POWER_AUTOMATE_WEBHOOK_URL: z.union([z.literal(""), z.url()]).default(""),
-  POWER_AUTOMATE_BEARER_TOKEN: z.string().optional().default(""),
-  MAIL_FROM: z.email(),
 });
 
 const authEnvironmentSchema = registrationEnvironmentSchema.extend({
@@ -21,6 +31,10 @@ const authEnvironmentSchema = registrationEnvironmentSchema.extend({
 
 export function getDatabaseEnvironment() {
   return databaseEnvironmentSchema.parse(process.env);
+}
+
+export function getMailEnvironment() {
+  return mailEnvironmentSchema.parse(process.env);
 }
 
 export function getRegistrationEnvironment() {
