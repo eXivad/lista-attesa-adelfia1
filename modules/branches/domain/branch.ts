@@ -3,12 +3,18 @@ import { calculateAge } from "@/modules/applicants/domain/age";
 export const BRANCHES = ["LC", "EG", "RS"] as const;
 export type Branch = (typeof BRANCHES)[number];
 
+export const BRANCH_COLORS = {
+  LC: "#FDC500",
+  EG: "#21A067",
+  RS: "#E74030",
+  COCA: "#9B66A5",
+} as const;
+
 export interface BranchConfiguration {
   branch: Branch;
   minAge: number;
   maxAge: number;
   entryAge: number;
-  colorHex: string;
 }
 
 export function calculateBranch(

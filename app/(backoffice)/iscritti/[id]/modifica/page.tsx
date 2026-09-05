@@ -36,6 +36,10 @@ export default async function ApplicantEditPage({ params }: { params: Promise<{ 
             birthPlace: entry.birthPlace,
             birthProvince: entry.birthProvince,
             fiscalCode: entry.fiscalCode,
+            residenceAddress: entry.residenceAddress,
+            residenceCity: entry.residenceCity,
+            residenceProvince: entry.residenceProvince,
+            residencePostalCode: entry.residencePostalCode,
             notes: entry.notes,
           },
           guardians: entry.guardians.map((guardian) => ({
@@ -49,6 +53,7 @@ export default async function ApplicantEditPage({ params }: { params: Promise<{ 
             address: guardian.address,
             city: guardian.city,
             province: guardian.province,
+            postalCode: guardian.postalCode,
             email: guardian.email,
             phone: guardian.phone,
           })),

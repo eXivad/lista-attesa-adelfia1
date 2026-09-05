@@ -16,9 +16,8 @@ export default async function DashboardPage() {
     ["Iscritti totali", overview.metrics.total],
     ["In attesa", overview.metrics.waiting],
     ["Da chiamare", overview.metrics.toCall],
-    ["Accettati anno corrente", overview.metrics.acceptedCurrentYear],
-    ["Rifiutati anno corrente", overview.metrics.refusedCurrentYear],
-    ["Email fallite", overview.metrics.failedEmails],
+    ["Accettati", overview.metrics.accepted],
+    ["Rifiutati", overview.metrics.refused],
   ] as const;
   const maxMonthly = Math.max(1, ...overview.monthly.map(({ total }) => total));
 

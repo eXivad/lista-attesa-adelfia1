@@ -31,7 +31,7 @@ function createClient() {
     },
     branchConfiguration: {
       findMany: vi.fn(async () => [
-        { branch: "LC", minAge: 8, maxAge: 11, entryAge: 8, colorHex: "#FDC500" },
+        { branch: "LC", minAge: 8, maxAge: 11, entryAge: 8 },
       ]),
     },
     $transaction: vi.fn(async (operations: Array<Promise<unknown>>) => Promise.all(operations)),

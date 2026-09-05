@@ -8,11 +8,12 @@ export interface PreparedImportRow {
   status: "IN_ATTESA";
   minor: {
     firstName: string; lastName: string; gender: "M" | "F"; birthDate: Date; birthYear: number;
-    birthPlace: string; birthProvince: string; fiscalCode: string; notes: string;
+    birthPlace: string; birthProvince: string; fiscalCode: string; residenceAddress: string;
+    residenceCity: string; residenceProvince: string; residencePostalCode: string; notes: string;
   };
   guardians: Array<{
     type: "A" | "B"; firstName: string; lastName: string; birthDate: Date; birthPlace: string;
-    birthProvince: string; fiscalCode: string; address: string; city: string; province: string; email: string; phone: string;
+    birthProvince: string; fiscalCode: string; address: string; city: string; province: string; postalCode: string; email: string; phone: string;
   }>;
 }
 
@@ -33,7 +34,9 @@ export function prepareImportRows(rows: Array<Record<string, unknown>>, privacyP
       minor: {
         firstName: value(row.firstName), lastName: value(row.lastName), gender: value(row.gender),
         birthDate: dateOnly(row.birthDate), birthPlace: value(row.birthPlace), birthProvince: value(row.birthProvince),
-        fiscalCode: value(row.fiscalCode), notes: value(row.notes),
+        fiscalCode: value(row.fiscalCode), residenceAddress: value(row.residenceAddress),
+        residenceCity: value(row.residenceCity), residenceProvince: value(row.residenceProvince),
+        residencePostalCode: value(row.residencePostalCode), notes: value(row.notes),
       },
       guardians: (["A", "B"] as const).map((type) => ({
         type,
@@ -41,7 +44,8 @@ export function prepareImportRows(rows: Array<Record<string, unknown>>, privacyP
         birthDate: dateOnly(row[`guardian${type}BirthDate`]), birthPlace: value(row[`guardian${type}BirthPlace`]),
         birthProvince: value(row[`guardian${type}BirthProvince`]), fiscalCode: value(row[`guardian${type}FiscalCode`]),
         address: value(row[`guardian${type}Address`]), city: value(row[`guardian${type}City`]),
-        province: value(row[`guardian${type}Province`]), email: value(row[`guardian${type}Email`]), phone: value(row[`guardian${type}Phone`]),
+        province: value(row[`guardian${type}Province`]), postalCode: value(row[`guardian${type}PostalCode`]),
+        email: value(row[`guardian${type}Email`]), phone: value(row[`guardian${type}Phone`]),
       })),
     };
     const parsed = createApplicantDataSchema(() => now).safeParse(data);

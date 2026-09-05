@@ -18,6 +18,10 @@ const command: CreateRegistrationCommand = {
     birthPlace: "Bari",
     birthProvince: "BA",
     fiscalCode: "RSSMRA18E12A662X",
+    residenceAddress: "Via delle Querce 12",
+    residenceCity: "Adelfia",
+    residenceProvince: "BA",
+    residencePostalCode: "70010",
     notes: "",
   },
   guardians: [
@@ -32,6 +36,7 @@ const command: CreateRegistrationCommand = {
       address: "Via Roma 1",
       city: "Adelfia",
       province: "BA",
+      postalCode: "70010",
       email: "anna@example.it",
       phone: "+39 333 1234567",
     },
@@ -46,6 +51,7 @@ const command: CreateRegistrationCommand = {
       address: "Via Roma 1",
       city: "Adelfia",
       province: "BA",
+      postalCode: "70010",
       email: "luigi@example.it",
       phone: "+39 333 7654321",
     },
@@ -74,7 +80,7 @@ function createPrismaDouble() {
     },
     branchConfiguration: {
       findMany: vi.fn(async () => [
-        { branch: "LC", minAge: 8, maxAge: 11, entryAge: 8, colorHex: "#FDC500" },
+        { branch: "LC", minAge: 8, maxAge: 11, entryAge: 8 },
       ]),
     },
     blockedIdentifier: {
@@ -108,7 +114,8 @@ describe("PrismaApplicantRegistrationRepository", () => {
         id: "entry-id",
         registrationNumber: "LA-2026-000123",
         fiscalCode: "RSSMRA18E12A662X",
-        guardians: { create: expect.arrayContaining([expect.objectContaining({ type: "A" }), expect.objectContaining({ type: "B" })]) },
+        residencePostalCode: "70010",
+        guardians: { create: expect.arrayContaining([expect.objectContaining({ type: "A", postalCode: "70010" }), expect.objectContaining({ type: "B", postalCode: "70010" })]) },
         mailOutbox: {
           create: expect.objectContaining({
             id: "outbox-id",
@@ -144,7 +151,7 @@ describe("PrismaApplicantRegistrationRepository", () => {
       activePrivacyPolicyVersion: "2026.1",
       openCalls: { associativeYearId: "year-1", startYear: 2026 },
       branchConfiguration: [
-        { branch: "LC", minAge: 8, maxAge: 11, entryAge: 8, colorHex: "#FDC500" },
+        { branch: "LC", minAge: 8, maxAge: 11, entryAge: 8 },
       ],
     });
     expect(client.associativeYear.findFirst).toHaveBeenCalledWith({

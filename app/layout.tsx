@@ -5,10 +5,10 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "Lista d’attesa | AGESCI Adelfia 1",
-    template: "%s | AGESCI Adelfia 1",
+    default: "Lista d’attesa",
+    template: "%s | Lista d’attesa",
   },
-  description: "Iscrizione e gestione della lista d’attesa del Gruppo scout AGESCI Adelfia 1.",
+  description: "Iscrizione e gestione della lista d’attesa del Gruppo scout.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

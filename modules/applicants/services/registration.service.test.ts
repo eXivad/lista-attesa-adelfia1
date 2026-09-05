@@ -9,9 +9,9 @@ import {
 
 const NOW = new Date("2026-09-03T12:00:00.000Z");
 const branchConfiguration: BranchConfiguration[] = [
-  { branch: "LC", minAge: 8, maxAge: 11, entryAge: 8, colorHex: "#FDC500" },
-  { branch: "EG", minAge: 12, maxAge: 15, entryAge: 12, colorHex: "#21A067" },
-  { branch: "RS", minAge: 16, maxAge: 21, entryAge: 16, colorHex: "#E74030" },
+  { branch: "LC", minAge: 8, maxAge: 11, entryAge: 8 },
+  { branch: "EG", minAge: 12, maxAge: 15, entryAge: 12 },
+  { branch: "RS", minAge: 16, maxAge: 21, entryAge: 16 },
 ];
 
 function createDependencies(overrides: Partial<ApplicantRegistrationRepository> = {}) {
@@ -64,7 +64,16 @@ describe("ApplicantRegistrationService", () => {
       expect.objectContaining({
         createdAt: NOW,
         status: "IN_ATTESA",
-        minor: expect.objectContaining({ fiscalCode: "RSSMRA18E12A662X", birthYear: 2018 }),
+        minor: expect.objectContaining({
+          fiscalCode: "RSSMRA18E12A662X",
+          birthYear: 2018,
+          residenceAddress: "Via delle Querce 12",
+          residencePostalCode: "70010",
+        }),
+        guardians: expect.arrayContaining([
+          expect.objectContaining({ type: "A", postalCode: "70010" }),
+          expect.objectContaining({ type: "B", postalCode: "70010" }),
+        ]),
       }),
     );
     expect(mailProvider.sendRegistrationConfirmation).toHaveBeenCalledWith({

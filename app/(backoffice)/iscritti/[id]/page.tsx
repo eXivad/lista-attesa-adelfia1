@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Pencil } from "lucide-react";
 
-import { ApplicantActions } from "@/components/applicants/applicant-actions";
+import { ApplicantDeleteAction, ApplicantStatusActions } from "@/components/applicants/applicant-actions";
 import { BranchBadge, StatusBadge } from "@/components/applicants/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -43,12 +43,22 @@ export default async function ApplicantDetailPage({ params, searchParams }: { pa
         </div>
       </div>
 
+      <Card className="border-violet-200 bg-violet-50/40">
+        <CardHeader><h2 className="font-slab text-xl font-bold text-violet-950">Gestione stato</h2><p className="text-sm text-stone-600">Stato corrente e azioni operative per questo iscritto.</p></CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center gap-3"><span className="text-sm font-bold text-stone-700">Stato corrente</span><StatusBadge status={entry.status} /></div>
+          <ApplicantStatusActions id={entry.id} name={`${entry.firstName} ${entry.lastName}`} status={entry.status} />
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader><h2 className="font-slab text-xl font-bold text-violet-950">Dati del minore</h2></CardHeader>
         <CardContent><InfoGrid rows={[
           ["Nome", entry.firstName], ["Cognome", entry.lastName], ["Sesso", entry.gender === "M" ? "Maschio" : "Femmina"],
           ["Data di nascita", formatDate(entry.birthDate)], ["Anno di nascita", String(entry.birthYear)], ["Luogo di nascita", entry.birthPlace],
           ["Provincia", entry.birthProvince], ["Codice Fiscale", entry.fiscalCode], ["Data iscrizione", formatDateTime(entry.createdAt)],
+          ["Indirizzo di residenza", entry.residenceAddress || "Da completare"], ["Comune di residenza", entry.residenceCity || "Da completare"],
+          ["Provincia di residenza", entry.residenceProvince || "Da completare"], ["CAP", entry.residencePostalCode || "Da completare"],
           ["Branca calcolata", branch ?? "Fuori branca"], ["Versione privacy", entry.privacyPolicyVersion], ["Consenso privacy", formatDateTime(entry.privacyAcceptedAt)],
         ]} /></CardContent>
       </Card>
@@ -59,7 +69,7 @@ export default async function ApplicantDetailPage({ params, searchParams }: { pa
           <CardContent><InfoGrid rows={[
             ["Nome", guardian.firstName], ["Cognome", guardian.lastName], ["Data di nascita", formatDate(guardian.birthDate)],
             ["Luogo di nascita", guardian.birthPlace], ["Provincia di nascita", guardian.birthProvince], ["Codice Fiscale", guardian.fiscalCode],
-            ["Indirizzo", guardian.address], ["Comune", guardian.city], ["Provincia", guardian.province],
+            ["Indirizzo", guardian.address], ["Comune", guardian.city], ["Provincia", guardian.province], ["CAP", guardian.postalCode || "Da completare"],
             ["Email", guardian.email], ["Cellulare", guardian.phone],
           ]} /></CardContent>
         </Card>
@@ -67,9 +77,9 @@ export default async function ApplicantDetailPage({ params, searchParams }: { pa
 
       <Card><CardHeader><h2 className="font-slab text-xl font-bold text-violet-950">Note</h2></CardHeader><CardContent><p className="whitespace-pre-wrap text-stone-700">{entry.notes || "Nessuna nota."}</p></CardContent></Card>
 
-      <Card>
-        <CardHeader><h2 className="font-slab text-xl font-bold text-violet-950">Azioni</h2><p className="text-sm text-stone-600">Le operazioni di stato e cancellazione richiedono sempre conferma.</p></CardHeader>
-        <CardContent><ApplicantActions id={entry.id} name={`${entry.firstName} ${entry.lastName}`} status={entry.status} /></CardContent>
+      <Card className="border-red-200">
+        <CardHeader><h2 className="font-slab text-xl font-bold text-red-900">Zona pericolosa</h2><p className="text-sm text-stone-600">La cancellazione è definitiva e rimane separata dalle azioni operative.</p></CardHeader>
+        <CardContent><ApplicantDeleteAction id={entry.id} name={`${entry.firstName} ${entry.lastName}`} /></CardContent>
       </Card>
     </div>
   );

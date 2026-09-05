@@ -29,6 +29,10 @@ const detailSelection = {
   birthPlace: true,
   birthProvince: true,
   fiscalCode: true,
+  residenceAddress: true,
+  residenceCity: true,
+  residenceProvince: true,
+  residencePostalCode: true,
   notes: true,
   status: true,
   privacyPolicyVersion: true,
@@ -58,12 +62,11 @@ export class PrismaApplicantQueryRepository {
     ]);
 
     const branchConfiguration: BranchConfiguration[] = branchRows.map(
-      ({ branch, minAge, maxAge, entryAge, colorHex }) => ({
+      ({ branch, minAge, maxAge, entryAge }) => ({
         branch,
         minAge,
         maxAge,
         entryAge,
-        colorHex,
       }),
     );
 
@@ -86,8 +89,8 @@ export class PrismaApplicantQueryRepository {
     return {
       entry,
       branchConfiguration: branchRows.map(
-        ({ branch, minAge, maxAge, entryAge, colorHex }) =>
-          ({ branch, minAge, maxAge, entryAge, colorHex }) satisfies BranchConfiguration,
+        ({ branch, minAge, maxAge, entryAge }) =>
+          ({ branch, minAge, maxAge, entryAge }) satisfies BranchConfiguration,
       ),
     };
   }

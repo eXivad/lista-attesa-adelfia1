@@ -58,7 +58,6 @@ export async function updateBranchesAction(_state: YearActionState, formData: Fo
     minAge: formData.get(`${branch}.minAge`),
     maxAge: formData.get(`${branch}.maxAge`),
     entryAge: formData.get(`${branch}.entryAge`),
-    colorHex: formData.get(`${branch}.colorHex`),
   })));
   if (!parsed.success) return { status: "error", message: parsed.error.issues[0]?.message ?? "Configurazione non valida." };
   await getAssociativeYearRepository().updateBranchConfigurations(parsed.data);

@@ -8,6 +8,7 @@ describe("RegistrationWizard", () => {
     const html = renderToStaticMarkup(
       <RegistrationWizard
         privacyPolicy={{ version: "2026.1", fileUrl: "/privacy" }}
+        groupName="Gruppo Scout"
         submitAction={async () => ({ status: "idle" })}
       />,
     );
@@ -20,6 +21,10 @@ describe("RegistrationWizard", () => {
     expect(html).toContain("Riepilogo");
     expect(html).toContain("Conferma");
     expect(html).toContain('for="minor.firstName"');
+    expect(html).toContain('for="minor.residenceAddress"');
+    expect(html).toContain('for="minor.residenceCity"');
+    expect(html).toContain('for="minor.residenceProvince"');
+    expect(html).toContain('for="minor.residencePostalCode"');
     expect(html).toContain('aria-current="step"');
     expect(html).toContain("Informativa privacy versione 2026.1");
   });

@@ -1,8 +1,9 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useId } from "react";
 
-import { Button, type ButtonProps } from "@/components/ui/button";
+import type { ButtonProps } from "@/components/ui/button";
+import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import type { ApplicantActionState } from "@/app/(backoffice)/iscritti/[id]/actions";
 
 interface ConfirmedActionFormProps {
@@ -15,17 +16,14 @@ interface ConfirmedActionFormProps {
 
 export function ConfirmedActionForm({ action, confirmation, label, variant, icon }: ConfirmedActionFormProps) {
   const [state, formAction, pending] = useActionState(action, { status: "idle" });
+  const formId = useId();
   return (
     <form
+      id={formId}
       action={formAction}
-      onSubmit={(event) => {
-        if (!window.confirm(confirmation)) event.preventDefault();
-      }}
       className="space-y-2"
     >
-      <Button type="submit" variant={variant} disabled={pending} className="w-full sm:w-auto">
-        {icon}{pending ? "Operazione…" : label}
-      </Button>
+      <ConfirmationDialog formId={formId} triggerLabel={label} title="Conferma operazione" description={confirmation} confirmLabel={label} pending={pending} variant={variant} className="w-full sm:w-auto" icon={icon} />
       {state.status === "error" && <p className="max-w-sm text-sm font-medium text-red-700" role="alert">{state.message}</p>}
     </form>
   );

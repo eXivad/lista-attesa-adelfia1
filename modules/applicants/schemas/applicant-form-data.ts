@@ -10,6 +10,10 @@ export function applicantDataFromFormData(formData: FormData): ApplicantDataInpu
       birthPlace: text(formData, "minor.birthPlace"),
       birthProvince: text(formData, "minor.birthProvince"),
       fiscalCode: text(formData, "minor.fiscalCode"),
+      residenceAddress: text(formData, "minor.residenceAddress"),
+      residenceCity: text(formData, "minor.residenceCity"),
+      residenceProvince: text(formData, "minor.residenceProvince"),
+      residencePostalCode: text(formData, "minor.residencePostalCode"),
       notes: text(formData, "minor.notes"),
     },
     guardians: (["A", "B"] as const).map((type) => ({
@@ -23,6 +27,7 @@ export function applicantDataFromFormData(formData: FormData): ApplicantDataInpu
       address: text(formData, `guardian.${type}.address`),
       city: text(formData, `guardian.${type}.city`),
       province: text(formData, `guardian.${type}.province`),
+      postalCode: text(formData, `guardian.${type}.postalCode`),
       email: text(formData, `guardian.${type}.email`),
       phone: text(formData, `guardian.${type}.phone`),
     })),

@@ -56,6 +56,10 @@ export class PrismaApplicantMutationRepository implements ApplicantMutationRepos
           birthPlace: command.minor.birthPlace,
           birthProvince: command.minor.birthProvince,
           fiscalCode: command.minor.fiscalCode,
+          residenceAddress: command.minor.residenceAddress,
+          residenceCity: command.minor.residenceCity,
+          residenceProvince: command.minor.residenceProvince,
+          residencePostalCode: command.minor.residencePostalCode,
           notes: command.minor.notes,
         },
       });
@@ -74,6 +78,7 @@ export class PrismaApplicantMutationRepository implements ApplicantMutationRepos
             address: guardian.address,
             city: guardian.city,
             province: guardian.province,
+            postalCode: guardian.postalCode,
             email: guardian.email,
             phone: guardian.phone,
           },

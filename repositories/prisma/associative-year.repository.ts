@@ -33,7 +33,7 @@ export class PrismaAssociativeYearRepository implements AssociativeYearRepositor
   async getBranchConfiguration() {
     return this.client.branchConfiguration.findMany({
       orderBy: { minAge: "asc" },
-      select: { branch: true, minAge: true, maxAge: true, entryAge: true, colorHex: true },
+      select: { branch: true, minAge: true, maxAge: true, entryAge: true },
     });
   }
 
@@ -67,7 +67,7 @@ export class PrismaAssociativeYearRepository implements AssociativeYearRepositor
       configuration.map((row) => this.client.branchConfiguration.upsert({
         where: { branch: row.branch },
         create: row,
-        update: { minAge: row.minAge, maxAge: row.maxAge, entryAge: row.entryAge, colorHex: row.colorHex },
+        update: { minAge: row.minAge, maxAge: row.maxAge, entryAge: row.entryAge },
       })),
     );
   }

@@ -22,9 +22,9 @@ async function main() {
   const createId = monotonicFactory();
   try {
     const branches = [
-      { branch: "LC" as const, minAge: 8, maxAge: 11, entryAge: 8, colorHex: "#FDC500" },
-      { branch: "EG" as const, minAge: 12, maxAge: 15, entryAge: 12, colorHex: "#21A067" },
-      { branch: "RS" as const, minAge: 16, maxAge: 21, entryAge: 16, colorHex: "#E74030" },
+      { branch: "LC" as const, minAge: 8, maxAge: 11, entryAge: 8 },
+      { branch: "EG" as const, minAge: 12, maxAge: 15, entryAge: 12 },
+      { branch: "RS" as const, minAge: 16, maxAge: 21, entryAge: 16 },
     ];
     for (const row of branches) {
       await prisma.branchConfiguration.upsert({ where: { branch: row.branch }, create: row, update: row });

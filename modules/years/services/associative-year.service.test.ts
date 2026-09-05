@@ -9,9 +9,9 @@ import {
 
 const NOW = new Date("2026-09-03T12:00:00Z");
 const branches: BranchConfiguration[] = [
-  { branch: "LC", minAge: 8, maxAge: 11, entryAge: 8, colorHex: "#FDC500" },
-  { branch: "EG", minAge: 12, maxAge: 15, entryAge: 12, colorHex: "#21A067" },
-  { branch: "RS", minAge: 16, maxAge: 21, entryAge: 16, colorHex: "#E74030" },
+  { branch: "LC", minAge: 8, maxAge: 11, entryAge: 8 },
+  { branch: "EG", minAge: 12, maxAge: 15, entryAge: 12 },
+  { branch: "RS", minAge: 16, maxAge: 21, entryAge: 16 },
 ];
 
 function setup() {

@@ -10,6 +10,7 @@ export type Capability =
   | "users:manage"
   | "mailing:manage"
   | "branches:manage"
+  | "branding:manage"
   | "statistics:read";
 
 export interface AuthenticatedUser {

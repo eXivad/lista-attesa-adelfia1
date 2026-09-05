@@ -157,6 +157,10 @@ model WaitingListEntry {
   birthPlace            String
   birthProvince         String          @db.Char(2)
   fiscalCode            String          @unique @db.Char(16)
+  residenceAddress      String
+  residenceCity         String
+  residenceProvince     String          @db.Char(2)
+  residencePostalCode   String          @db.VarChar(12)
   notes                 String          @default("") @db.Text
   status                ApplicantStatus @default(IN_ATTESA)
   terminalStatusAt      DateTime?       @db.Timestamptz(3)
@@ -191,6 +195,7 @@ model Guardian {
   address         String
   city            String
   province        String       @db.Char(2)
+  postalCode      String       @db.VarChar(12)
   email           String
   phone           String
   createdAt       DateTime     @default(now()) @db.Timestamptz(3)
@@ -282,9 +287,28 @@ model BranchConfiguration {
   minAge    Int
   maxAge    Int
   entryAge  Int
-  colorHex  String @db.Char(7)
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
+}
+
+model GroupSettings {
+  id          String  @id @db.VarChar(26)
+  groupName   String  @db.VarChar(120)
+  logoAssetId String? @unique @db.VarChar(26)
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(3)
+
+  logoAsset GroupLogoAsset? @relation(fields: [logoAssetId], references: [id], onDelete: SetNull)
+}
+
+model GroupLogoAsset {
+  id        String   @id @db.VarChar(26)
+  mimeType  String   @db.VarChar(32)
+  byteSize  Int
+  content   Bytes    @db.ByteA
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  settings GroupSettings?
 }
 
 model RegistrationCounter {

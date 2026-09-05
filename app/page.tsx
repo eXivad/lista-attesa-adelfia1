@@ -3,20 +3,20 @@ import { ArrowRight, CalendarDays, Clock3, ShieldCheck } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { GroupBrand } from "@/components/branding/group-brand";
+import { getGroupBrandingRepository } from "@/lib/server/group-branding";
 
-export default function Home() {
+export const dynamic = "force-dynamic";
+
+export default async function Home() {
+  const branding = await getGroupBrandingRepository().getSettings();
+  const logoUrl = branding.logoVersion ? `/api/branding/logo?v=${encodeURIComponent(branding.logoVersion)}` : null;
   return (
     <main className="flex min-h-screen flex-col bg-stone-50">
       <header className="border-b border-violet-900/10 bg-white px-4 py-4 sm:px-6">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4">
-          <Link href="/" className="flex min-h-11 items-center gap-3" aria-label="AGESCI Adelfia 1, home">
-            <span className="flex size-10 items-center justify-center rounded-xl bg-violet-800 font-slab text-lg font-bold text-white">
-              A1
-            </span>
-            <span>
-              <strong className="block font-slab text-violet-950">AGESCI Adelfia 1</strong>
-              <span className="text-xs text-stone-500">Lista d’attesa</span>
-            </span>
+          <Link href="/" className="flex min-h-11 items-center gap-3" aria-label={`${branding.groupName}, home`}>
+            <GroupBrand groupName={branding.groupName} logoUrl={logoUrl} subtitle="Lista d’attesa" />
           </Link>
           <Button asChild variant="ghost" size="sm">
             <Link href="/login">Area Capi</Link>
@@ -28,7 +28,7 @@ export default function Home() {
         <div className="absolute inset-x-0 top-0 -z-0 h-64 bg-[radial-gradient(circle_at_top_left,_rgba(174,176,217,0.55),_transparent_62%)]" />
         <div className="relative mx-auto grid max-w-6xl items-center gap-10 lg:grid-cols-[1.25fr_0.75fr]">
           <div>
-            <Badge>Gruppo scout AGESCI Adelfia 1</Badge>
+            <Badge>Gruppo scout {branding.groupName}</Badge>
             <h1 className="mt-5 max-w-3xl font-slab text-4xl font-bold leading-tight text-violet-950 sm:text-6xl">
               Un primo passo verso una nuova avventura.
             </h1>
@@ -60,7 +60,7 @@ export default function Home() {
       </section>
 
       <footer className="mt-auto border-t border-stone-200 bg-white px-4 py-6 text-center text-sm text-stone-600">
-        <p>AGESCI Adelfia 1 · Servizio per la gestione della lista d’attesa</p>
+        <p>{branding.groupName} · Servizio per la gestione della lista d’attesa</p>
       </footer>
     </main>
   );

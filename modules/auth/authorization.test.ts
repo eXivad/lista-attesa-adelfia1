@@ -25,6 +25,7 @@ describe("RBAC", () => {
     "users:manage",
     "mailing:manage",
     "branches:manage",
+    "branding:manage",
     "statistics:read",
   ] satisfies Capability[])("nega a STAFF %s", (capability) => {
     expect(hasPermission("STAFF", capability)).toBe(false);
@@ -37,6 +38,7 @@ describe("RBAC", () => {
       "users:manage",
       "mailing:manage",
       "branches:manage",
+      "branding:manage",
       "statistics:read",
     ];
 

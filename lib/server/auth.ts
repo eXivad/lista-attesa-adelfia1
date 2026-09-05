@@ -18,7 +18,7 @@ function createAuth() {
   });
 
   return betterAuth({
-    appName: "AGESCI Adelfia 1",
+    appName: "Lista d’attesa",
     baseURL: environment.BETTER_AUTH_URL,
     secret: environment.BETTER_AUTH_SECRET,
     trustedOrigins: [new URL(environment.BETTER_AUTH_URL).origin],

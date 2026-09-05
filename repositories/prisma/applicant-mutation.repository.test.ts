@@ -48,6 +48,10 @@ const updateCommand = {
     birthPlace: "Bari",
     birthProvince: "BA",
     fiscalCode: "RSSMRA18E12A662X",
+    residenceAddress: "Via delle Querce 12",
+    residenceCity: "Adelfia",
+    residenceProvince: "BA",
+    residencePostalCode: "70010",
     notes: "Nota",
   },
   guardians: ["A", "B"].map((type) => ({
@@ -61,6 +65,7 @@ const updateCommand = {
     address: "Via Roma 1",
     city: "Adelfia",
     province: "BA",
+    postalCode: "70010",
     email: "anna@example.it",
     phone: "+39 333 1234567",
   })),
@@ -75,9 +80,15 @@ describe("PrismaApplicantMutationRepository", () => {
 
     expect(transaction.waitingListEntry.updateMany).toHaveBeenCalledWith({
       where: { id: "applicant-1" },
-      data: expect.not.objectContaining({ createdAt: expect.anything(), status: expect.anything() }),
+      data: expect.objectContaining({
+        residenceAddress: "Via delle Querce 12",
+        residencePostalCode: "70010",
+      }),
     });
     expect(transaction.guardian.update).toHaveBeenCalledTimes(2);
+    expect(transaction.guardian.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ postalCode: "70010" }) }),
+    );
   });
 
   it("rifiuta con compare-and-set, aggiorna la campagna e crea blocco e outbox", async () => {

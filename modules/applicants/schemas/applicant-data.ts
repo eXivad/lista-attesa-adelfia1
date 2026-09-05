@@ -37,6 +37,10 @@ const minorSchema = z.object({
   birthPlace: requiredText("Il luogo di nascita"),
   birthProvince: province,
   fiscalCode,
+  residenceAddress: requiredText("L'indirizzo di residenza", 180),
+  residenceCity: requiredText("Il comune di residenza"),
+  residenceProvince: province,
+  residencePostalCode: requiredText("Il CAP", 12),
   notes: z.string().trim().max(2_000, "Le note non possono superare 2000 caratteri.").optional().default(""),
 });
 
@@ -51,6 +55,7 @@ const guardianSchema = z.object({
   address: requiredText("L'indirizzo", 180),
   city: requiredText("Il comune"),
   province,
+  postalCode: requiredText("Il CAP", 12),
   email: z.email("Inserisci un indirizzo email valido.").transform((value) => value.trim().toLowerCase()),
   phone: z
     .string()

@@ -1,12 +1,32 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useId } from "react";
 
 import type { SettingsActionState } from "@/app/(backoffice)/impostazioni/actions";
 import { Button, type ButtonProps } from "@/components/ui/button";
+import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { Input } from "@/components/ui/input";
 
 type Action = (state: SettingsActionState, data: FormData) => Promise<SettingsActionState>;
+
+export function GroupNameForm({ action, groupName }: { action: Action; groupName: string }) {
+  const [state, formAction, pending] = useActionState(action, { status: "idle" });
+  return <form action={formAction} className="grid gap-4 sm:grid-cols-[1fr_auto]">
+    <Field name="groupName" label="Nome del gruppo" defaultValue={groupName} minLength={2} maxLength={120} />
+    <div className="flex items-end"><Button className="w-full" disabled={pending}>{pending ? "Salvataggio…" : "Salva nome"}</Button></div>
+    {state.status === "error" && <p role="alert" className="text-sm font-medium text-red-700 sm:col-span-2">{state.message}</p>}
+  </form>;
+}
+
+export function GroupLogoForm({ action }: { action: Action }) {
+  const [state, formAction, pending] = useActionState(action, { status: "idle" });
+  return <form action={formAction} className="grid gap-4 sm:grid-cols-[1fr_auto]">
+    <Field name="logo" label="Nuovo logo" type="file" accept="image/png,image/jpeg,image/webp" />
+    <div className="flex items-end"><Button className="w-full" disabled={pending}>{pending ? "Caricamento…" : "Carica logo"}</Button></div>
+    <p className="text-xs text-stone-500 sm:col-span-2">Formati PNG, JPEG o WebP. Dimensione massima 2 MB.</p>
+    {state.status === "error" && <p role="alert" className="text-sm font-medium text-red-700 sm:col-span-2">{state.message}</p>}
+  </form>;
+}
 
 export function StaffInvitationForm({ action }: { action: Action }) {
   const [state, formAction, pending] = useActionState(action, { status: "idle" });
@@ -26,7 +46,8 @@ export function MailingRecipientForm({ action }: { action: Action }) {
 
 export function SettingsDangerForm({ action, label, confirmation, variant = "outline" }: { action: Action; label: string; confirmation: string; variant?: ButtonProps["variant"] }) {
   const [state, formAction, pending] = useActionState(action, { status: "idle" });
-  return <form action={formAction} onSubmit={(event) => { if (!window.confirm(confirmation)) event.preventDefault(); }}><Button size="sm" variant={variant} disabled={pending}>{pending ? "Operazione…" : label}</Button>{state.status === "error" && <p role="alert" className="mt-1 text-xs text-red-700">{state.message}</p>}</form>;
+  const formId = useId();
+  return <form id={formId} action={formAction}><ConfirmationDialog formId={formId} triggerLabel={label} title="Conferma operazione" description={confirmation} confirmLabel={label} size="sm" variant={variant} pending={pending} />{state.status === "error" && <p role="alert" className="mt-1 text-xs text-red-700">{state.message}</p>}</form>;
 }
 
 export function StaffEditForm({ action, user }: { action: Action; user: { firstName: string; lastName: string; email: string; memberCode: string; role: "ADMIN" | "STAFF" } }) {

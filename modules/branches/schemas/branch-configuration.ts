@@ -7,7 +7,6 @@ const rowSchema = z.object({
   minAge: z.coerce.number().int().min(0).max(30),
   maxAge: z.coerce.number().int().min(0).max(30),
   entryAge: z.coerce.number().int().min(0).max(30),
-  colorHex: z.string().regex(/^#[0-9A-F]{6}$/i, "Inserisci un colore esadecimale valido."),
 });
 
 export const branchConfigurationsSchema = z.array(rowSchema).length(3).superRefine((rows, context) => {

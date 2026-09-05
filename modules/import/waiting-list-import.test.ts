@@ -12,6 +12,10 @@ function row(overrides: Record<string, unknown> = {}) {
     birthPlace: validRegistrationInput.minor.birthPlace,
     birthProvince: validRegistrationInput.minor.birthProvince,
     fiscalCode: validRegistrationInput.minor.fiscalCode,
+    residenceAddress: validRegistrationInput.minor.residenceAddress,
+    residenceCity: validRegistrationInput.minor.residenceCity,
+    residenceProvince: validRegistrationInput.minor.residenceProvince,
+    residencePostalCode: validRegistrationInput.minor.residencePostalCode,
     notes: validRegistrationInput.minor.notes,
     createdAt: "2024-05-10T10:30:00+02:00",
     privacyAcceptedAt: "2024-05-10T10:29:00+02:00",
@@ -31,6 +35,8 @@ describe("preparazione import lista storica", () => {
     expect(result.valid.map((item) => item.minor.fiscalCode)).toEqual(["RSSMRA18E12A662B", "RSSMRA18E12A662A"]);
     expect(result.valid.every((item) => item.status === "IN_ATTESA")).toBe(true);
     expect(result.valid[0].createdAt.toISOString()).toBe("2024-05-10T08:30:00.000Z");
+    expect(result.valid[0].minor.residencePostalCode).toBe("70010");
+    expect(result.valid[0].guardians.every((guardian) => guardian.postalCode === "70010")).toBe(true);
   });
 
   it("segnala righe invalide e CF duplicati nel file", () => {

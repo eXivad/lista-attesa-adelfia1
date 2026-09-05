@@ -7,7 +7,13 @@ import {
 } from "@/app/(backoffice)/iscritti/[id]/actions";
 import type { ApplicantStatus } from "@/modules/applicants/domain/state-machine";
 
-export function ApplicantActions({ id, name, status }: { id: string; name: string; status: ApplicantStatus }) {
+interface ApplicantActionProps {
+  id: string;
+  name: string;
+  status: ApplicantStatus;
+}
+
+export function ApplicantStatusActions({ id, name, status }: ApplicantActionProps) {
   return (
     <div className="flex flex-wrap items-start gap-2">
       {status === "IN_ATTESA" && (
@@ -43,13 +49,18 @@ export function ApplicantActions({ id, name, status }: { id: string; name: strin
           />
         </>
       )}
-      <ConfirmedActionForm
-        action={deleteApplicantAction.bind(null, id)}
-        confirmation={`Confermi la cancellazione definitiva di ${name}? Questa operazione non può essere annullata.`}
-        label="Cancella"
-        variant="destructive"
-        icon={<Trash2 className="size-4" aria-hidden="true" />}
-      />
     </div>
+  );
+}
+
+export function ApplicantDeleteAction({ id, name }: Pick<ApplicantActionProps, "id" | "name">) {
+  return (
+    <ConfirmedActionForm
+      action={deleteApplicantAction.bind(null, id)}
+      confirmation={`Confermi la cancellazione definitiva di ${name}? Questa operazione non può essere annullata.`}
+      label="Cancella definitivamente"
+      variant="destructive"
+      icon={<Trash2 className="size-4" aria-hidden="true" />}
+    />
   );
 }

@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight, Search, SlidersHorizontal } from "lucide-rea
 import { BranchBadge, StatusBadge } from "@/components/applicants/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { formatDate, formatDateTime } from "@/lib/date-time";
+import { formatDateTime } from "@/lib/date-time";
 import { getPrismaClient } from "@/lib/server/prisma";
 import { requireCapability } from "@/lib/server/session";
 import { applicantListQuerySchema } from "@/modules/applicants/schemas/list-query";
@@ -142,7 +142,8 @@ export default async function ApplicantListPage({ searchParams }: ApplicantListP
                       <StatusBadge status={entry.status} />
                     </div>
                     <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
-                      <div><dt className="text-stone-500">Nascita</dt><dd className="font-medium text-stone-900">{formatDate(entry.birthDate)}</dd></div>
+                      <div><dt className="text-stone-500">Anno di nascita</dt><dd className="font-medium text-stone-900">{entry.birthYear}</dd></div>
+                      <div><dt className="text-stone-500">Sesso</dt><dd className="font-medium text-stone-900">{genderLabel(entry.gender)}</dd></div>
                       <div><dt className="text-stone-500">Branca</dt><dd className="mt-1"><BranchBadge branch={branch} /></dd></div>
                       <div className="col-span-2"><dt className="text-stone-500">Iscrizione</dt><dd className="font-medium text-stone-900">{formatDateTime(entry.createdAt)}</dd></div>
                     </dl>
@@ -156,14 +157,15 @@ export default async function ApplicantListPage({ searchParams }: ApplicantListP
           <div className="hidden overflow-hidden rounded-2xl border border-stone-200 bg-white md:block">
             <table className="w-full border-collapse text-left text-sm">
               <thead className="bg-violet-950 text-white">
-                <tr><th className="px-4 py-3">Pos.</th><th className="px-4 py-3">Iscritto</th><th className="px-4 py-3">Nascita</th><th className="px-4 py-3">Branca</th><th className="px-4 py-3">Iscrizione</th><th className="px-4 py-3">Stato</th><th className="px-4 py-3"><span className="sr-only">Azioni</span></th></tr>
+                <tr><th className="px-4 py-3">Pos.</th><th className="px-4 py-3">Iscritto</th><th className="px-4 py-3">Anno di nascita</th><th className="px-4 py-3">Sesso</th><th className="px-4 py-3">Branca</th><th className="px-4 py-3">Iscrizione</th><th className="px-4 py-3">Stato</th><th className="px-4 py-3"><span className="sr-only">Azioni</span></th></tr>
               </thead>
               <tbody>
                 {result.items.map((entry) => (
                   <tr key={entry.id} className="border-t border-stone-100">
                     <td className="px-4 py-4 font-bold text-stone-500">{entry.position}</td>
                     <td className="px-4 py-4 font-bold text-violet-950">{entry.firstName} {entry.lastName}</td>
-                    <td className="px-4 py-4 text-stone-700">{formatDate(entry.birthDate)}</td>
+                    <td className="px-4 py-4 text-stone-700">{entry.birthYear}</td>
+                    <td className="px-4 py-4 text-stone-700">{genderLabel(entry.gender)}</td>
                     <td className="px-4 py-4"><BranchBadge branch={calculateBranch(entry.birthDate, referenceDate, result.branchConfiguration)} /></td>
                     <td className="px-4 py-4 text-stone-700">{formatDateTime(entry.createdAt)}</td>
                     <td className="px-4 py-4"><StatusBadge status={entry.status} /></td>
@@ -242,4 +244,8 @@ function pageHref(raw: Record<string, string | string[] | undefined>, page: numb
   }
   params.set("page", String(page));
   return `/lista-attesa?${params.toString()}`;
+}
+
+function genderLabel(gender: "M" | "F") {
+  return gender === "M" ? "Maschio" : "Femmina";
 }

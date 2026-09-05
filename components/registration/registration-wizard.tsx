@@ -26,6 +26,10 @@ const stepFields: Array<Array<FieldPath<ApplicantRegistrationInput>>> = [
     "minor.birthPlace",
     "minor.birthProvince",
     "minor.fiscalCode",
+    "minor.residenceAddress",
+    "minor.residenceCity",
+    "minor.residenceProvince",
+    "minor.residencePostalCode",
     "minor.notes",
   ],
   [
@@ -38,6 +42,7 @@ const stepFields: Array<Array<FieldPath<ApplicantRegistrationInput>>> = [
     "guardians.0.address",
     "guardians.0.city",
     "guardians.0.province",
+    "guardians.0.postalCode",
     "guardians.0.email",
     "guardians.0.phone",
   ],
@@ -51,6 +56,7 @@ const stepFields: Array<Array<FieldPath<ApplicantRegistrationInput>>> = [
     "guardians.1.address",
     "guardians.1.city",
     "guardians.1.province",
+    "guardians.1.postalCode",
     "guardians.1.email",
     "guardians.1.phone",
   ],
@@ -65,10 +71,11 @@ export type RegisterApplicantActionResult =
 
 interface RegistrationWizardProps {
   privacyPolicy: { version: string; fileUrl: string };
+  groupName: string;
   submitAction: (input: ApplicantRegistrationInput) => Promise<RegisterApplicantActionResult>;
 }
 
-export function RegistrationWizard({ privacyPolicy, submitAction }: RegistrationWizardProps) {
+export function RegistrationWizard({ privacyPolicy, groupName, submitAction }: RegistrationWizardProps) {
   const [step, setStep] = useState(0);
   const [pending, setPending] = useState(false);
   const [result, setResult] = useState<RegisterApplicantActionResult>({ status: "idle" });
@@ -85,6 +92,10 @@ export function RegistrationWizard({ privacyPolicy, submitAction }: Registration
         birthPlace: "",
         birthProvince: "",
         fiscalCode: "",
+        residenceAddress: "",
+        residenceCity: "",
+        residenceProvince: "",
+        residencePostalCode: "",
         notes: "",
       },
       guardians: [emptyGuardian("A"), emptyGuardian("B")],
@@ -150,7 +161,7 @@ export function RegistrationWizard({ privacyPolicy, submitAction }: Registration
   return (
     <div className="space-y-5">
       <div>
-        <p className="text-sm font-bold uppercase tracking-[0.16em] text-violet-700">AGESCI Adelfia 1</p>
+        <p className="text-sm font-bold uppercase tracking-[0.16em] text-violet-700">{groupName}</p>
         <h1 className="font-slab mt-2 text-3xl font-bold text-violet-950 sm:text-4xl">
           Iscrizione alla lista d’attesa
         </h1>
@@ -221,6 +232,18 @@ export function RegistrationWizard({ privacyPolicy, submitAction }: Registration
                 </FormField>
                 <FormField label="Codice Fiscale" name="minor.fiscalCode" error={errorFor("minor.fiscalCode")} className="sm:col-span-2">
                   <Input id="minor.fiscalCode" maxLength={24} autoCapitalize="characters" {...form.register("minor.fiscalCode")} />
+                </FormField>
+                <FormField label="Indirizzo di residenza" name="minor.residenceAddress" error={errorFor("minor.residenceAddress")} className="sm:col-span-2">
+                  <Input id="minor.residenceAddress" autoComplete="street-address" {...form.register("minor.residenceAddress")} />
+                </FormField>
+                <FormField label="Comune di residenza" name="minor.residenceCity" error={errorFor("minor.residenceCity")}>
+                  <Input id="minor.residenceCity" autoComplete="address-level2" {...form.register("minor.residenceCity")} />
+                </FormField>
+                <FormField label="Provincia di residenza" name="minor.residenceProvince" error={errorFor("minor.residenceProvince")}>
+                  <Input id="minor.residenceProvince" maxLength={2} autoComplete="address-level1" {...form.register("minor.residenceProvince")} />
+                </FormField>
+                <FormField label="CAP" name="minor.residencePostalCode" error={errorFor("minor.residencePostalCode")}>
+                  <Input id="minor.residencePostalCode" inputMode="numeric" autoComplete="postal-code" maxLength={12} {...form.register("minor.residencePostalCode")} />
                 </FormField>
                 <FormField label="Note" name="minor.notes" error={errorFor("minor.notes")} className="sm:col-span-2" hint="Provenienza da altro gruppo, fratelli o sorelle nel gruppo, residenza fuori paese o altre informazioni utili.">
                   <Textarea id="minor.notes" {...form.register("minor.notes")} />
@@ -312,6 +335,7 @@ function emptyGuardian(type: "A" | "B") {
     address: "",
     city: "",
     province: "",
+    postalCode: "",
     email: "",
     phone: "",
   };
@@ -357,6 +381,9 @@ function GuardianFields({ index, register, errorFor }: GuardianFieldsProps) {
       <FormField label="Provincia di residenza" name={field("province")} error={errorFor(field("province"))}>
         <Input id={field("province")} maxLength={2} autoComplete="address-level1" {...register(field("province"))} />
       </FormField>
+      <FormField label="CAP" name={field("postalCode")} error={errorFor(field("postalCode"))}>
+        <Input id={field("postalCode")} inputMode="numeric" autoComplete="postal-code" maxLength={12} {...register(field("postalCode"))} />
+      </FormField>
       <FormField label="Email" name={field("email")} error={errorFor(field("email"))}>
         <Input id={field("email")} type="email" inputMode="email" autoComplete="email" {...register(field("email"))} />
       </FormField>
@@ -375,6 +402,7 @@ function RegistrationSummary({ values }: { values: ApplicantRegistrationInput })
         ["Data di nascita", values.minor.birthDate],
         ["Sesso", values.minor.gender === "M" ? "Maschio" : "Femmina"],
         ["Codice Fiscale", values.minor.fiscalCode],
+        ["Residenza", `${values.minor.residenceAddress}, ${values.minor.residenceCity} (${values.minor.residenceProvince}) ${values.minor.residencePostalCode}`],
       ]} />
       {values.guardians.map((guardian, index) => (
         <SummarySection
@@ -384,7 +412,7 @@ function RegistrationSummary({ values }: { values: ApplicantRegistrationInput })
             ["Nome", `${guardian.firstName} ${guardian.lastName}`],
             ["Email", guardian.email],
             ["Cellulare", guardian.phone],
-            ["Residenza", `${guardian.address}, ${guardian.city} (${guardian.province})`],
+            ["Residenza", `${guardian.address}, ${guardian.city} (${guardian.province}) ${guardian.postalCode}`],
           ]}
         />
       ))}

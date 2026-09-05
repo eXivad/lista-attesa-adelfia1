@@ -4,13 +4,14 @@ import { ArrowLeft, FileWarning } from "lucide-react";
 import { RegistrationWizard } from "@/components/registration/registration-wizard";
 import { Card, CardContent } from "@/components/ui/card";
 import { getPrismaClient } from "@/lib/server/prisma";
+import { getGroupBrandingRepository } from "@/lib/server/group-branding";
 import { PrismaPrivacyRepository } from "@/repositories/prisma/privacy.repository";
 import { registerApplicantAction } from "./actions";
 
 export const dynamic = "force-dynamic";
 
 export default async function RegistrationPage() {
-  const privacyPolicy = await getPrivacyPolicySafely();
+  const [privacyPolicy, branding] = await Promise.all([getPrivacyPolicySafely(), getGroupBrandingRepository().getSettings()]);
 
   return (
     <main className="min-h-screen bg-stone-50 px-4 py-6 sm:px-6 sm:py-10">
@@ -20,7 +21,7 @@ export default async function RegistrationPage() {
           Torna alla home
         </Link>
         {privacyPolicy ? (
-          <RegistrationWizard privacyPolicy={privacyPolicy} submitAction={registerApplicantAction} />
+          <RegistrationWizard privacyPolicy={privacyPolicy} groupName={branding.groupName} submitAction={registerApplicantAction} />
         ) : (
           <Card>
             <CardContent className="flex gap-4 p-7">

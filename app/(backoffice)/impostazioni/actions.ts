@@ -8,11 +8,50 @@ import { getPrismaClient } from "@/lib/server/prisma";
 import { getAuth } from "@/lib/server/auth";
 import { requireCapability } from "@/lib/server/session";
 import { getStaffInvitationService } from "@/lib/server/staff";
+import { getGroupBrandingRepository } from "@/lib/server/group-branding";
+import { groupNameSchema, MAX_GROUP_LOGO_BYTES, validateGroupLogo } from "@/modules/branding/group-branding";
 import { StaffInvitationError } from "@/modules/staff/services/staff-invitation.service";
 import { monotonicFactory } from "ulid";
 
 export type SettingsActionState = { status: "idle" } | { status: "error"; message: string };
 const createId = monotonicFactory();
+
+export async function updateGroupNameAction(_state: SettingsActionState, formData: FormData): Promise<SettingsActionState> {
+  void _state;
+  await requireCapability("branding:manage");
+  const parsed = groupNameSchema.safeParse(formData.get("groupName"));
+  if (!parsed.success) return { status: "error", message: parsed.error.issues[0]?.message ?? "Nome del gruppo non valido." };
+  await getGroupBrandingRepository().updateGroupName(parsed.data);
+  revalidatePath("/", "layout");
+  redirect("/impostazioni?brandingUpdated=1");
+}
+
+export async function uploadGroupLogoAction(_state: SettingsActionState, formData: FormData): Promise<SettingsActionState> {
+  void _state;
+  await requireCapability("branding:manage");
+  const file = formData.get("logo");
+  if (!(file instanceof File) || file.size === 0) return { status: "error", message: "Seleziona un logo PNG, JPEG o WebP." };
+  if (file.size > MAX_GROUP_LOGO_BYTES) return { status: "error", message: "Il logo non può superare 2 MB." };
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  try {
+    const { mimeType } = validateGroupLogo({ mimeType: file.type, bytes, size: file.size });
+    await getGroupBrandingRepository().replaceLogo({ mimeType, bytes });
+  } catch (error) {
+    return { status: "error", message: error instanceof Error ? error.message : "Logo non valido." };
+  }
+  revalidatePath("/", "layout");
+  revalidatePath("/api/branding/logo");
+  redirect("/impostazioni?brandingUpdated=1");
+}
+
+export async function removeGroupLogoAction(_state: SettingsActionState, _formData: FormData): Promise<SettingsActionState> {
+  void _state; void _formData;
+  await requireCapability("branding:manage");
+  await getGroupBrandingRepository().removeLogo();
+  revalidatePath("/", "layout");
+  revalidatePath("/api/branding/logo");
+  redirect("/impostazioni?brandingUpdated=1");
+}
 
 const staffSchema = z.object({
   firstName: z.string().trim().min(1).max(120),

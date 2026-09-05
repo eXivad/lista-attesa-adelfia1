@@ -44,8 +44,8 @@ export class PrismaApplicantRegistrationRepository implements ApplicantRegistrat
         ? { associativeYearId: openCalls.id, startYear: openCalls.startYear }
         : null,
       branchConfiguration: branches.map(
-        ({ branch, minAge, maxAge, entryAge, colorHex }) =>
-          ({ branch, minAge, maxAge, entryAge, colorHex }) satisfies BranchConfiguration,
+        ({ branch, minAge, maxAge, entryAge }) =>
+          ({ branch, minAge, maxAge, entryAge }) satisfies BranchConfiguration,
       ),
     };
   }
@@ -96,6 +96,10 @@ export class PrismaApplicantRegistrationRepository implements ApplicantRegistrat
             birthPlace: command.minor.birthPlace,
             birthProvince: command.minor.birthProvince,
             fiscalCode: command.minor.fiscalCode,
+            residenceAddress: command.minor.residenceAddress,
+            residenceCity: command.minor.residenceCity,
+            residenceProvince: command.minor.residenceProvince,
+            residencePostalCode: command.minor.residencePostalCode,
             notes: command.minor.notes,
             status: command.status,
             privacyAccepted: true,
@@ -115,6 +119,7 @@ export class PrismaApplicantRegistrationRepository implements ApplicantRegistrat
                 address: guardian.address,
                 city: guardian.city,
                 province: guardian.province,
+                postalCode: guardian.postalCode,
                 email: guardian.email,
                 phone: guardian.phone,
                 createdAt: command.createdAt,
