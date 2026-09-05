@@ -31,6 +31,11 @@ env:
   BOOTSTRAP_ADMIN_PASSWORD: CI-only-password-000000000000
   E2E_ADMIN_EMAIL: admin-ci@example.org
   E2E_ADMIN_PASSWORD: CI-only-password-000000000000
+  E2E_STAFF_EMAIL: staff-ci@example.org
+  E2E_STAFF_PASSWORD: CI-only-staff-password-000000000
+  E2E_STAFF_MEMBER_CODE: CI-STAFF-001
+  E2E_ALLOW_RESET: "true"
+  E2E_RESET_SECRET: ci-only-e2e-reset-secret-0000000000
 
 jobs:
   quality:

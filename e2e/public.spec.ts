@@ -39,6 +39,10 @@ test("completa l'iscrizione pubblica in sei passi", async ({ page }) => {
   await page.getByLabel("Luogo di nascita", { exact: true }).fill("Bari");
   await page.getByLabel("Provincia di nascita", { exact: true }).fill("BA");
   await page.getByLabel("Codice Fiscale", { exact: true }).fill(minorFiscalCode);
+  await page.getByLabel("Indirizzo di residenza").fill("Via Roma 1");
+  await page.getByLabel("Comune di residenza").fill("Adelfia");
+  await page.getByLabel("Provincia di residenza").fill("BA");
+  await page.getByLabel("CAP", { exact: true }).fill("70010");
   await page.getByRole("button", { name: "Continua" }).click();
 
   await fillGuardian(page, {
@@ -81,6 +85,7 @@ async function fillGuardian(
   await page.getByLabel("Indirizzo di residenza").fill("Via Roma 1");
   await page.getByLabel("Comune di residenza").fill("Adelfia");
   await page.getByLabel("Provincia di residenza").fill("BA");
+  await page.getByLabel("CAP", { exact: true }).fill("70010");
   await page.getByLabel("Email").fill(guardian.email);
   await page.getByLabel("Cellulare").fill("+39 333 1234567");
 }

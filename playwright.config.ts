@@ -1,4 +1,8 @@
+import "dotenv/config";
+
 import { defineConfig, devices } from "@playwright/test";
+
+const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? process.env.BETTER_AUTH_URL ?? "http://127.0.0.1:3000";
 
 export default defineConfig({
   testDir: "./e2e",
@@ -8,7 +12,7 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   reporter: process.env.CI ? "github" : "list",
   use: {
-    baseURL: process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:3000",
+    baseURL,
     trace: "on-first-retry",
   },
   projects: [
@@ -17,7 +21,7 @@ export default defineConfig({
   ],
   webServer: {
     command: "node node_modules/next/dist/bin/next start",
-    url: "http://127.0.0.1:3000",
+    url: baseURL,
     reuseExistingServer: false,
     timeout: 120_000,
   },
