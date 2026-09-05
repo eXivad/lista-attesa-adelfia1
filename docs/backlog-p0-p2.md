@@ -1,10 +1,20 @@
 # Audit backlog P0–P2
 
-Audit del 4 settembre 2026 basato sulla specifica funzionale, sul codice, sui test e sulla configurazione locale. Gli stati significano:
+Audit del 5 settembre 2026 basato sulla specifica funzionale, sul codice, sui test e sulla configurazione locale. Gli stati significano:
 
 - ✅ implementato e verificato in misura adeguata;
 - 🟡 implementato in parte oppure non ancora validato end-to-end/operativamente;
 - ❌ non implementato.
+
+## Change Request v1
+
+Le 17 CR del documento `CR_Lista_Attesa_AGESCI_Adelfia1_v1.md` sono implementate e verificate:
+
+- CR-01/02: residenza completa del minore e CAP dei tutori, inclusi persistenza, modifica e import;
+- CR-03/04/07/08/09: dashboard e lista aggiornate;
+- CR-05/06/10/11/12: navigazione responsive e dialog di conferma accessibili, senza `confirm`/`alert` nativi;
+- CR-13/14: label età esplicite e palette branche fissa;
+- CR-15/16/17: nome e logo del gruppo configurabili e applicati alle superfici pubbliche e riservate.
 
 ## P0 — Core indispensabile
 
@@ -21,7 +31,7 @@ Audit del 4 settembre 2026 basato sulla specifica funzionale, sul codice, sui te
 | 9 | Validazione CF minima | ✅ | Normalizzazione e controllo di 16 caratteri alfanumerici. |
 | 10 | Anti-duplicato | ✅ | Vincolo univoco, controllo applicativo e registro HMAC per i rifiutati. |
 | 11 | Generazione `registrationNumber` | ✅ | Contatore transazionale e formato `LA-AAAA-NNNNNN`. |
-| 12 | Lista cronologica | 🟡 | Ordinamento `createdAt ASC, id ASC` garantito; nella riga/card mancano però sesso e anno di nascita espliciti richiesti dal §24.3. |
+| 12 | Lista cronologica | ✅ | Ordinamento `createdAt ASC, id ASC` garantito; riga e card mostrano anno di nascita, sesso e timestamp completo. |
 | 13 | Filtri | ✅ | Sesso, anno di nascita e stato. |
 | 14 | Paginazione | ✅ | Paginazione esplicita da 20 elementi. |
 | 15 | Ricerca | ✅ | Minore, CF, pratica e contatti/nome dei tutori senza cambiare ordine. |
@@ -31,14 +41,14 @@ Audit del 4 settembre 2026 basato sulla specifica funzionale, sul codice, sui te
 | 19 | State machine a quattro stati | ✅ | Quattro soli stati e transizioni terminali protette. |
 | 20 | Test core | ✅ | Suite Vitest con soglie di coverage all’80%. |
 
-Risultato P0: **19 complete, 1 parziale, 0 mancanti**.
+Risultato P0: **20 complete, 0 parziali, 0 mancanti**.
 
 ## P1 — Operatività annuale
 
 | # | Task | Stato | Evidenza / lavoro residuo |
 |---:|---|:---:|---|
 | 21 | Gestione anno associativo | ✅ | Creazione, anno corrente unico e storico. |
-| 22 | Config branche | ✅ | Età, ingresso e colori modificabili solo da Admin. |
+| 22 | Config branche | ✅ | Età e ingresso modificabili solo da Admin; colori fissati dal dominio secondo CR-14. |
 | 23 | Apertura chiamate | ✅ | Selezione per solo anno di nascita e aggiornamento transazionale. |
 | 24 | Nuove iscrizioni eleggibili | ✅ | Inserimento diretto in `DA_CHIAMARE` durante chiamate aperte. |
 | 25 | Chiusura chiamate | ✅ | Snapshot prima del reset e residui riportati in attesa. |
@@ -52,15 +62,15 @@ Risultato P0: **19 complete, 1 parziale, 0 mancanti**.
 | 33 | Email rifiuto | 🟡 | Outbox e invio implementati; consegna Microsoft 365 non collaudata. |
 | 34 | Mailing list | ✅ | Gestione Admin e inclusione dei destinatari nelle email operative. |
 | 35 | Import storico | 🟡 | CSV/XLSX, dry-run, duplicati e timestamp coperti; resta da eseguire e riconciliare il file reale. |
-| 36 | Test E2E completi | 🟡 | Iscrizione pubblica, accesso anonimo e navigazione Admin presenti; mancano E2E completi per filtri/ordine, ciclo chiamate e matrice STAFF/ADMIN. |
+| 36 | Test E2E completi | ✅ | Fixture deterministiche e database isolato coprono iscrizione pubblica, filtri/ordine, ciclo chiamate e matrice STAFF/ADMIN. |
 
-Risultato P1: **8 complete, 8 parziali, 0 mancanti**.
+Risultato P1: **9 complete, 7 parziali, 0 mancanti**.
 
 ## P2 — Miglioramenti
 
 | # | Task | Stato | Evidenza / lavoro residuo |
 |---:|---|:---:|---|
-| 37 | Dashboard avanzata | ✅ | Metriche operative, più anziani, ultimi iscritti ed email fallite. |
+| 37 | Dashboard avanzata | ✅ | Metriche operative globali, più anziani, ultimi iscritti e grafico; la metrica email fallite è stata rimossa dalla CR-03. |
 | 38 | Grafico 12 mesi | ✅ | Aggregazione PostgreSQL e grafico responsive. |
 | 39 | PWA | ❌ | Manifest, service worker e installabilità non presenti. |
 | 40 | Retry email da UI | ❌ | Outbox e stato errore esistono, ma manca l’azione di retry amministrativa. |
@@ -74,12 +84,10 @@ Risultato P2: **2 complete, 2 parziali, 5 mancanti**.
 
 ## Risultato complessivo
 
-Su 45 task: **29 complete, 11 parziali e 5 mancanti**.
+Su 45 task: **31 complete, 9 parziali e 5 mancanti**. Inoltre, le 17 CR successive sono complete.
 
 Ordine consigliato per chiudere il backlog:
 
-1. completare la lista P0 mostrando sesso e anno di nascita;
-2. completare gli E2E P1 per ordine/filtri, chiamate e RBAC;
-3. configurare e collaudare Power Automate/Microsoft 365;
-4. eseguire l’import reale con dry-run, backup e riconciliazione;
-5. affrontare P2 nell’ordine: retry email, accessibilità/performance, cronologia chiamate, PWA, configurazioni e template.
+1. configurare e collaudare Power Automate/Microsoft 365;
+2. eseguire l'import reale con dry-run, backup e riconciliazione;
+3. affrontare P2 nell'ordine: retry email, accessibilità/performance, cronologia chiamate, PWA, configurazioni e template.

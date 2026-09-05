@@ -88,7 +88,7 @@ pnpm run test:e2e
 pnpm audit
 ```
 
-`pnpm run test:e2e` esegue prima un build di produzione. Gli E2E backoffice richiedono `E2E_ADMIN_EMAIL` e `E2E_ADMIN_PASSWORD` su un database di test isolato. Le evidenze TDD sono riepilogate in [docs/testing/v1-tdd.md](docs/testing/v1-tdd.md).
+`pnpm run test:e2e` esegue prima un build di produzione. Gli E2E backoffice richiedono `E2E_ALLOW_RESET=true`, `E2E_RESET_SECRET`, le credenziali `E2E_ADMIN_*` e, per la matrice ruoli, `E2E_STAFF_*`. Eseguirli soltanto impostando `DATABASE_URL` al valore di `TEST_DATABASE_URL`: l'endpoint fixture elimina e ricrea dati applicativi e rifiuta database il cui nome non termina con `_test` o `_ci`. Le evidenze TDD sono riepilogate in [docs/testing/v1-tdd.md](docs/testing/v1-tdd.md).
 
 ## Automazione GitHub
 

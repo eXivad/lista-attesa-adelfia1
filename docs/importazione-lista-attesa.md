@@ -8,4 +8,6 @@ pnpm run import:waiting-list -- .\dati.xlsx --privacy-version=2026.1 --report=re
 
 Solo dopo aver verificato il report, aggiungere `--apply`. CSV e XLSX devono usare le intestazioni del file `docs/import-template.csv`. I timestamp CSV devono essere ISO 8601 con fuso esplicito, per esempio `2024-05-10T10:30:00+02:00`; le celle data/ora Excel native sono accettate.
 
+I dati di residenza del minore (`residenceAddress`, `residenceCity`, `residenceProvince`, `residencePostalCode`) e il CAP di entrambi i genitori (`guardianAPostalCode`, `guardianBPostalCode`) sono obbligatori. Le province devono essere sigle di due lettere; i CAP accettano al massimo 12 caratteri.
+
 Lo script ordina prima per `createdAt` originale e poi per numero di riga, forza ogni record a `IN_ATTESA`, protegge dai CF duplicati e mantiene il timestamp storico. La versione privacy passata deve esistere già nel database.
