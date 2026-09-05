@@ -54,17 +54,17 @@ Risultato P0: **20 complete, 0 parziali, 0 mancanti**.
 | 25 | Chiusura chiamate | ✅ | Snapshot prima del reset e residui riportati in attesa. |
 | 26 | Statistiche anonime | ✅ | Snapshot aggregati per branca, sesso e anno di nascita. |
 | 27 | Gestione Capi | ✅ | Invito, modifica, ruolo, reset ed eliminazione completa. |
-| 28 | Inviti 24h | 🟡 | Token, scadenza, monouso e reinvio implementati; consegna reale non validata senza Power Automate. |
-| 29 | Reset password | 🟡 | Flusso Better Auth implementato; consegna reale non validata senza Power Automate. |
-| 30 | Adapter Power Automate | 🟡 | Adapter, timeout, HTTPS e test presenti; webhook reale non configurato. |
-| 31 | Email iscrizione | 🟡 | Outbox e invio non bloccante implementati; consegna Microsoft 365 non collaudata. |
-| 32 | Email accettazione | 🟡 | Outbox e invio implementati; consegna Microsoft 365 non collaudata. |
-| 33 | Email rifiuto | 🟡 | Outbox e invio implementati; consegna Microsoft 365 non collaudata. |
+| 28 | Inviti 24h | 🟡 | Token, scadenza, monouso e reinvio implementati; consegna reale Gmail non ancora validata. |
+| 29 | Reset password | 🟡 | Flusso Better Auth implementato; consegna reale Gmail non ancora validata. |
+| 30 | Adapter email | ✅ | Nodemailer/Gmail OAuth 2.0 con TLS e quota persistente; connessione reale verificata e messaggio diagnostico ricevuto con SPF, DKIM e DMARC superati. |
+| 31 | Email iscrizione | 🟡 | Outbox, template multipart e invio non bloccante implementati; consegna Gmail non collaudata. |
+| 32 | Email accettazione | 🟡 | Outbox, template e invio implementati; consegna Gmail non collaudata. |
+| 33 | Email rifiuto | 🟡 | Outbox, template e invio implementati; consegna Gmail non collaudata. |
 | 34 | Mailing list | ✅ | Gestione Admin e inclusione dei destinatari nelle email operative. |
 | 35 | Import storico | 🟡 | CSV/XLSX, dry-run, duplicati e timestamp coperti; resta da eseguire e riconciliare il file reale. |
 | 36 | Test E2E completi | ✅ | Fixture deterministiche e database isolato coprono iscrizione pubblica, filtri/ordine, ciclo chiamate e matrice STAFF/ADMIN. |
 
-Risultato P1: **9 complete, 7 parziali, 0 mancanti**.
+Risultato P1: **10 complete, 6 parziali, 0 mancanti**.
 
 ## P2 — Miglioramenti
 
@@ -84,10 +84,11 @@ Risultato P2: **2 complete, 2 parziali, 5 mancanti**.
 
 ## Risultato complessivo
 
-Su 45 task: **31 complete, 9 parziali e 5 mancanti**. Inoltre, le 17 CR successive sono complete.
+Su 45 task: **32 complete, 8 parziali e 5 mancanti**. Inoltre, le 17 CR successive sono complete.
 
 Ordine consigliato per chiudere il backlog:
 
-1. configurare e collaudare Power Automate/Microsoft 365;
-2. eseguire l'import reale con dry-run, backup e riconciliazione;
-3. affrontare P2 nell'ordine: retry email, accessibilità/performance, cronologia chiamate, PWA, configurazioni e template.
+1. collaudare sui flussi reali iscrizione, accettazione, rifiuto, invito Capo e reset password, inclusa la gestione dei bounce;
+2. aggiungere il retry amministrativo dell'outbox, rigenerando invece token e link per inviti e reset password;
+3. eseguire l'import reale con dry-run, backup e riconciliazione;
+4. proseguire con accessibilità/performance, cronologia chiamate, PWA, configurazioni e template.

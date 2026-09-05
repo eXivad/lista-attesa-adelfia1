@@ -11,7 +11,7 @@ Copertura funzionale principale:
 - Modifica, cancellazione, compare-and-set e transizioni terminali.
 - Creazione anno, apertura, nuova iscrizione durante chiamate e chiusura con snapshot prima del reset.
 - Configurazione branche, inviti Capo, rate limiting, dashboard, import e retention.
-- Contratto Power Automate e componenti principali di login/iscrizione.
+- Adapter Gmail SMTP OAuth 2.0, template multipart, quota persistente e componenti principali di login/iscrizione.
 - Campi di residenza, dashboard globale, lista arricchita e colori branca fissi introdotti dalle CR.
 - Dialog di conferma, navigazione responsive, autorizzazioni STAFF/ADMIN e branding configurabile.
 
@@ -29,8 +29,9 @@ I test che richiedono PostgreSQL devono essere eseguiti su un database di test i
 
 Ultima verifica locale del 5 settembre 2026 su PostgreSQL 18 isolato:
 
-- 33 file di test e 121 test unitari/integrativi superati.
+- 35 file di test e 132 test unitari/integrativi superati.
 - 12 E2E superati su Chromium mobile e desktop; 2 casi mutanti sono saltati intenzionalmente sul progetto mobile ed eseguiti una volta su desktop.
 - Gli E2E coprono iscrizione pubblica, filtri/ricerca/paginazione e ordine stabile, ciclo completo chiamate e autorizzazioni STAFF/ADMIN.
-- Coverage: 93,29% statement, 85,19% branch, 92,45% funzioni e 95,50% linee.
+- Coverage: 93,52% statement, 85,42% branch, 92,42% funzioni e 95,62% linee.
 - Build di produzione, ESLint, TypeScript e validazione/migrazioni Prisma superati.
+- Collaudo Gmail OAuth 2.0 personale superato: connessione TLS verificata, messaggio diagnostico ricevuto e intestazioni SPF, DKIM e DMARC tutte valide.

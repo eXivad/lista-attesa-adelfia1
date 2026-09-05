@@ -1,6 +1,6 @@
 # CRM Lista d'Attesa — AGESCI Adelfia 1
 
-Applicazione mobile-first per iscrizione pubblica e gestione riservata della lista d'attesa. Implementa il perimetro V1 P0/P1 della specifica: ordine cronologico immutabile, quattro soli stati, ciclo dell'anno associativo, statistiche anonime, Better Auth con RBAC, Power Automate, import e retention.
+Applicazione mobile-first per iscrizione pubblica e gestione riservata della lista d'attesa. Implementa il perimetro V1 P0/P1 della specifica: ordine cronologico immutabile, quattro soli stati, ciclo dell'anno associativo, statistiche anonime, Better Auth con RBAC, Gmail SMTP OAuth 2.0, import e retention.
 
 ## Stack
 
@@ -9,6 +9,7 @@ Applicazione mobile-first per iscrizione pubblica e gestione riservata della lis
 - Tailwind CSS 4.3.3, componenti in stile shadcn/ui e font Roboto/Roboto Slab self-hosted con Fontsource 5.3.0
 - PostgreSQL 18 e Prisma 7.10.0
 - Better Auth 1.7.2
+- Nodemailer 10.0.0 con Gmail SMTP e OAuth 2.0
 - Zod 4.5.4, React Hook Form 7.87.0
 - Vitest 4.1.11 e Playwright 1.62.1
 
@@ -41,7 +42,7 @@ I segreti non vanno mai committati. Generare valori indipendenti e casuali di al
 - `IDENTIFIER_HMAC_KEY`
 - `RATE_LIMIT_HMAC_KEY`
 
-`BETTER_AUTH_URL` deve essere l'URL pubblico dell'app. `POWER_AUTOMATE_WEBHOOK_URL` deve essere HTTPS in produzione; se assente, le operazioni restano valide e la consegna viene registrata come fallita. Il payload è documentato in [docs/power-automate.md](docs/power-automate.md).
+`BETTER_AUTH_URL` deve essere l'URL pubblico HTTPS dell'app in produzione. Gmail SMTP usa OAuth 2.0 e mantiene client secret e refresh token esclusivamente nelle variabili server-side. Se le credenziali non sono configurate, le operazioni applicative restano valide e l'outbox registra l'invio come fallito. Configurazione, quote, DNS e collaudo sono documentati in [docs/email-gmail-oauth2.md](docs/email-gmail-oauth2.md).
 
 ## Flussi implementati
 
@@ -103,7 +104,7 @@ Lo stato puntuale delle task della specifica è documentato in [docs/backlog-p0-
 ## Produzione
 
 1. Configurare PostgreSQL gestito con backup, TLS e utenza a privilegi minimi.
-2. Impostare le variabili d'ambiente e il webhook Power Automate.
+2. Configurare Gmail OAuth 2.0, SPF/DKIM/DMARC e il margine di quota seguendo la guida email.
 3. Eseguire `pnpm install --frozen-lockfile`, `pnpm run db:deploy`, `pnpm run db:seed` e `pnpm run build`.
 4. Creare il primo Admin una sola volta con `pnpm run admin:bootstrap`.
 5. Verificare HTTPS, email, privacy, retention e import su staging prima del go-live.
