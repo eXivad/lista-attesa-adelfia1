@@ -38,7 +38,7 @@ Ultima verifica locale del 5 settembre 2026 su PostgreSQL 18 isolato:
 
 Aggiornamento del 6 settembre 2026 dopo il supporto agli archivi storici e la semplificazione della navigazione:
 
-- 43 file di test e 162 test unitari/integrativi superati.
+- 44 file di test e 164 test unitari/integrativi superati, incluso l'health check del database.
 - Coverage: 93,64% statement, 85,96% branch, 94,44% funzioni e 95,59% linee.
 - Validazione Prisma, ESLint, TypeScript e build di produzione superati; l'audit pnpm non rileva vulnerabilità note.
 - Import reale eseguito dopo backup e dry-run, quindi riconciliato in forma aggregata: 151 iscritti e 165 tutori.

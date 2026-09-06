@@ -4,6 +4,7 @@ const databaseEnvironmentSchema = z.object({
   DATABASE_URL: z.url().refine((value) => value.startsWith("postgresql://") || value.startsWith("postgres://"), {
     message: "DATABASE_URL deve essere una connessione PostgreSQL.",
   }),
+  DATABASE_POOL_MAX: z.coerce.number().int().min(1).max(20).default(10),
 });
 
 const optionalEmail = z.union([z.literal(""), z.email()]).transform((value) => value.toLowerCase());

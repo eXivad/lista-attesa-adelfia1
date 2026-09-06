@@ -104,6 +104,8 @@ Aprire `.env` e valorizzare almeno:
 
 ```dotenv
 DATABASE_URL="postgresql://postgres:postgres@localhost:5432/adelfia_waiting_list?schema=public"
+DIRECT_URL=""
+DATABASE_POOL_MAX="10"
 BETTER_AUTH_URL="http://localhost:3000"
 BETTER_AUTH_SECRET="..."
 IDENTIFIER_HMAC_KEY="..."
@@ -189,6 +191,8 @@ Tutte le variabili sono documentate in [.env.example](.env.example). I valori re
 | Variabile | Scopo | Necessaria |
 |---|---|:---:|
 | `DATABASE_URL` | Connessione PostgreSQL usata dall’applicazione e da Prisma | Sì |
+| `DIRECT_URL` | Connessione diretta/session per migrazioni e backup; usa `DATABASE_URL` se vuota | Solo produzione serverless |
+| `DATABASE_POOL_MAX` | Connessioni massime aperte da ogni istanza dell’app | No, default `10` |
 | `TEST_DATABASE_URL` | Database separato per test distruttivi | Solo E2E |
 | `BETTER_AUTH_URL` | URL pubblico dell’applicazione | Sì |
 | `BETTER_AUTH_SECRET` | Firma e sicurezza Better Auth | Sì |
@@ -336,6 +340,8 @@ Il repository non è ancora legato a un provider specifico. La piattaforma scelt
 - HTTPS e dominio stabile per `BETTER_AUTH_URL`;
 - rispetto di `Cache-Control`, `ETag` e query string per il logo versionato.
 
+Per un runtime serverless, `DATABASE_URL` deve usare il pooler transaction del provider e `DATABASE_POOL_MAX` deve iniziare da un valore prudenziale, normalmente `1`. `DIRECT_URL` deve invece usare una connessione diretta o un pooler session compatibile con migrazioni, `pg_dump` e `pg_restore`.
+
 Sequenza di rilascio consigliata:
 
 1. creare PostgreSQL gestito con backup automatici;
@@ -345,9 +351,10 @@ Sequenza di rilascio consigliata:
 5. creare il primo Admin con `pnpm run admin:bootstrap`, poi rimuovere dalla piattaforma la password di bootstrap;
 6. configurare branding, privacy e destinatari dal backoffice;
 7. verificare login, iscrizione, PDF privacy e tutti i flussi email;
-8. importare eventuali dati reali solo dopo backup e dry-run;
-9. promuovere lo stesso commit in produzione;
-10. conservare il deployment precedente per un rollback rapido.
+8. verificare che `GET /api/health` risponda `200` senza essere memorizzato in cache;
+9. importare eventuali dati reali solo dopo backup e dry-run;
+10. promuovere lo stesso commit in produzione;
+11. conservare il deployment precedente per un rollback rapido.
 
 Le migrazioni non devono essere lanciate contemporaneamente da più istanze dell’applicazione. Usare una fase di rilascio o un job amministrativo separato. Nodemailer e Prisma richiedono un runtime Node.js: non distribuire questi percorsi su un runtime Edge.
 
