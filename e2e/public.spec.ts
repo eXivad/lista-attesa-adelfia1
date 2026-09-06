@@ -1,12 +1,11 @@
 import { expect, test, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
-test("home pubblica accessibile e percorso iscrizione visibile", async ({ page }) => {
+test("la radice porta il visitatore anonimo direttamente all'iscrizione", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-    "Un primo passo verso una nuova avventura.",
-  );
-  await expect(page.getByRole("link", { name: /iscrizione/i })).toBeVisible();
+  await expect(page).toHaveURL(/\/iscrizione$/);
+  await expect(page.locator("header").getByText("Iscrizione alla lista d’attesa", { exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: /torna alla home/i })).toHaveCount(0);
   const results = await new AxeBuilder({ page }).analyze();
   expect(results.violations).toEqual([]);
 });

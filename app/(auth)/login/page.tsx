@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { LoginForm } from "@/components/auth/login-form";
@@ -19,9 +18,9 @@ export default async function LoginPage() {
   return (
     <main className="grid min-h-screen place-items-center bg-stone-50 px-4 py-10">
       <div className="w-full max-w-md space-y-5">
-        <Link href="/" className="mx-auto flex w-fit min-h-11 items-center gap-3" aria-label="Torna alla home">
+        <div className="mx-auto w-fit">
           <GroupBrand groupName={branding.groupName} logoUrl={logoUrl} />
-        </Link>
+        </div>
         <Card>
           <CardContent className="p-6 sm:p-8">
             <LoginForm />
