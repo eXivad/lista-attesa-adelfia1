@@ -13,9 +13,9 @@ export default async function PrivacyPage() {
   return (
     <main className="min-h-screen bg-stone-50 px-4 py-8 sm:px-6">
       <div className="mx-auto max-w-6xl">
-        <Link className="mb-5 inline-flex min-h-11 items-center gap-2 font-bold text-violet-800" href="/iscrizione">
+        <Link className="mb-5 inline-flex min-h-11 items-center gap-2 font-bold text-violet-800" href="/impostazioni">
           <ArrowLeft className="size-4" aria-hidden="true" />
-          Torna all’iscrizione
+          Torna alle impostazioni
         </Link>
         <Card>
           <CardHeader>

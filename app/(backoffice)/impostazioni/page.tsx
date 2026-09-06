@@ -29,6 +29,7 @@ import {
   updateStaffAction,
   uploadGroupLogoAction,
 } from "./actions";
+import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
@@ -96,7 +97,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
         <CardHeader>
           <h2 className="font-slab text-xl font-bold text-violet-950">Identità del gruppo</h2>
           <p className="text-sm text-stone-600">
-            Nome e logo vengono applicati alla navigazione del backoffice senza richiedere un nuovo deploy.
+            Assegna il Nome e il Logo del tuo gruppo per dare identità al sito.
           </p>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -139,8 +140,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
         <CardHeader>
           <h2 className="font-slab text-xl font-bold text-violet-950">Informativa privacy</h2>
           <p className="text-sm text-stone-600">
-            Indica la versione e il link diretto al PDF ospitato sul sito esterno. Non serve modificare
-            variabili d’ambiente né eseguire un nuovo deploy.
+            In questa sezione puoi gestire le informative sulla privacy utilizzate nel sito. È possibile aggiungere nuove versioni dell’informativa, modificarne i contenuti e scegliere quale versione rendere attiva per le nuove iscrizioni.
           </p>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -155,23 +155,28 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                   </p>
                 </div>
               </div>
-              <a
+              <Link
                 className="inline-flex min-h-11 items-center gap-2 font-bold underline underline-offset-4"
                 href="/privacy"
-                target="_blank"
                 rel="noreferrer"
               >
                 Apri l’anteprima
                 <ExternalLink className="size-4" aria-hidden="true" />
-              </a>
+              </Link>
             </div>
           ) : (
             <p className="rounded-2xl bg-amber-50 p-4 text-sm font-medium text-amber-950">
               Nessuna informativa attiva: le nuove iscrizioni restano bloccate finché non ne pubblichi una.
             </p>
           )}
+          <div>
+            <h3 className="font-slab text-lg font-bold text-violet-950">Aggiungi Nuova Informativa Privacy</h3>
+            <p className="mt-1 mb-4 text-sm text-stone-600">
+              Aggiungi al sito una nuova Informativa alla Privacy aggiornata.
+            </p>
+            <PrivacyPolicyForm action={publishPrivacyPolicyAction} />
+          </div>
 
-          <PrivacyPolicyForm action={publishPrivacyPolicyAction} />
 
           <div>
             <h3 className="font-slab text-lg font-bold text-violet-950">Storico versioni</h3>
@@ -219,7 +224,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
         <CardHeader>
           <h2 className="font-slab text-xl font-bold text-violet-950">Invita un Capo</h2>
           <p className="text-sm text-stone-600">
-            Il link monouso scade dopo 24 ore; l’account nasce quando viene impostata la password.
+            Aggiungi un Capo per la gestione della lista d’attesa. Il link d’invito nella mail ha validità di 24h.
           </p>
         </CardHeader>
         <CardContent><StaffInvitationForm action={inviteStaffAction} /></CardContent>

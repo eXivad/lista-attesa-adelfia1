@@ -49,16 +49,17 @@ export function PrivacyPolicyForm({ action }: { action: Action }) {
 
   return (
     <form action={formAction} className="grid gap-4 lg:grid-cols-[minmax(10rem,0.35fr)_minmax(18rem,1fr)_auto]">
+
       <Field
         name="version"
-        label="Nuova versione"
+        label="Versione Documento"
         maxLength={40}
         placeholder="es. 2026.2"
         autoComplete="off"
       />
       <Field
         name="fileUrl"
-        label="Link HTTPS del PDF"
+        label="Link del Documento"
         type="url"
         maxLength={2048}
         placeholder="https://documenti.example.org/privacy.pdf"
@@ -69,12 +70,7 @@ export function PrivacyPolicyForm({ action }: { action: Action }) {
           {pending ? "Pubblicazione…" : "Pubblica e attiva"}
         </Button>
       </div>
-      <p className="text-xs leading-5 text-stone-500 lg:col-span-3">
-        Il documento resta sul sito esterno. Pubblicando, questa versione sostituisce quella attiva
-        per le nuove iscrizioni; lo storico dei consensi non viene modificato. Usa il link HTTPS diretto
-        a un PDF pubblico e verifica con l’anteprima che il sito esterno ne consenta la visualizzazione
-        incorporata. Per una nuova informativa usa un nuovo URL: non sovrascrivere il PDF precedente.
-      </p>
+
       {state.status === "error" && (
         <p role="alert" className="text-sm font-medium text-red-700 lg:col-span-3">
           {state.message}
