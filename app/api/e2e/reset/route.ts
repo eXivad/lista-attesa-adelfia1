@@ -34,8 +34,21 @@ function isAuthorized(candidate: string | null) {
 
 async function resetFixtures(scenario: "list" | "calls") {
   const client = getPrismaClient();
-  const privacy = await client.privacyPolicyVersion.findFirst({ where: { isActive: true }, select: { version: true } });
-  if (!privacy) throw new Error("E2E fixtures require an active privacy policy.");
+  const privacy = await client.privacyPolicyVersion.findFirst({
+    where: { isActive: true },
+    select: { version: true },
+  }) ?? await client.privacyPolicyVersion.upsert({
+    where: { version: "e2e-1" },
+    create: {
+      id: e2eId(900),
+      version: "e2e-1",
+      fileUrl: "https://example.test/privacy-e2e.pdf",
+      publishedAt: new Date("2026-01-01T00:00:00Z"),
+      isActive: true,
+    },
+    update: { isActive: true },
+    select: { version: true },
+  });
 
   const staff = readStaffFixture();
   const staffPasswordHash = staff ? await hashPassword(staff.password) : null;

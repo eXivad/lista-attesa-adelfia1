@@ -44,6 +44,46 @@ export function MailingRecipientForm({ action }: { action: Action }) {
   return <form action={formAction} className="grid gap-4 sm:grid-cols-[1fr_1fr_auto]"><Field name="label" label="Etichetta" /><Field name="email" label="Email" type="email" /><div className="flex items-end"><Button disabled={pending}>Aggiungi</Button></div>{state.status === "error" && <p role="alert" className="text-sm text-red-700 sm:col-span-3">{state.message}</p>}</form>;
 }
 
+export function PrivacyPolicyForm({ action }: { action: Action }) {
+  const [state, formAction, pending] = useActionState(action, { status: "idle" });
+
+  return (
+    <form action={formAction} className="grid gap-4 lg:grid-cols-[minmax(10rem,0.35fr)_minmax(18rem,1fr)_auto]">
+      <Field
+        name="version"
+        label="Nuova versione"
+        maxLength={40}
+        placeholder="es. 2026.2"
+        autoComplete="off"
+      />
+      <Field
+        name="fileUrl"
+        label="Link HTTPS del PDF"
+        type="url"
+        maxLength={2048}
+        placeholder="https://documenti.example.org/privacy.pdf"
+        autoComplete="url"
+      />
+      <div className="flex items-end">
+        <Button className="w-full" disabled={pending}>
+          {pending ? "Pubblicazione…" : "Pubblica e attiva"}
+        </Button>
+      </div>
+      <p className="text-xs leading-5 text-stone-500 lg:col-span-3">
+        Il documento resta sul sito esterno. Pubblicando, questa versione sostituisce quella attiva
+        per le nuove iscrizioni; lo storico dei consensi non viene modificato. Usa il link HTTPS diretto
+        a un PDF pubblico e verifica con l’anteprima che il sito esterno ne consenta la visualizzazione
+        incorporata. Per una nuova informativa usa un nuovo URL: non sovrascrivere il PDF precedente.
+      </p>
+      {state.status === "error" && (
+        <p role="alert" className="text-sm font-medium text-red-700 lg:col-span-3">
+          {state.message}
+        </p>
+      )}
+    </form>
+  );
+}
+
 export function SettingsDangerForm({ action, label, confirmation, variant = "outline" }: { action: Action; label: string; confirmation: string; variant?: ButtonProps["variant"] }) {
   const [state, formAction, pending] = useActionState(action, { status: "idle" });
   const formId = useId();

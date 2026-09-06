@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Check, ChevronLeft, ChevronRight, LoaderCircle } from "lucide-react";
 import { get, useForm, type FieldPath, type Resolver } from "react-hook-form";
 
+import { PrivacyConsentStep } from "@/components/registration/privacy-consent-step";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -168,14 +169,9 @@ export function RegistrationWizard({ privacyPolicy, groupName, submitAction }: R
         <p className="mt-3 max-w-2xl text-stone-600">
           Compila tutti i passaggi. I dati non saranno inviati finché non confermerai il riepilogo.
         </p>
-        <a
-          className="mt-3 inline-flex min-h-11 items-center text-sm font-bold text-violet-800 underline underline-offset-4"
-          href={privacyPolicy.fileUrl}
-          target="_blank"
-          rel="noreferrer"
-        >
-          Informativa privacy versione {privacyPolicy.version}
-        </a>
+        <p className="mt-3 text-sm font-medium text-violet-800">
+          Informativa privacy versione {privacyPolicy.version}: sarà mostrata per intero nel passaggio Privacy.
+        </p>
       </div>
 
       <nav aria-label="Avanzamento iscrizione" className="overflow-x-auto pb-2">
@@ -260,30 +256,11 @@ export function RegistrationWizard({ privacyPolicy, groupName, submitAction }: R
             )}
 
             {step === 3 && (
-              <div className="space-y-5">
-                <div className="rounded-2xl bg-violet-50 p-5 text-sm leading-6 text-violet-950">
-                  Prima di proseguire, consulta l’
-                  <a className="font-bold underline" href={privacyPolicy.fileUrl} target="_blank" rel="noreferrer">
-                    informativa privacy versione {privacyPolicy.version}
-                  </a>
-                  .
-                </div>
-                <div>
-                  <label className="flex min-h-12 cursor-pointer items-start gap-3 rounded-2xl border border-stone-300 p-4">
-                    <input
-                      type="checkbox"
-                      className="mt-1 size-5 accent-violet-800"
-                      aria-invalid={Boolean(errorFor("privacyAccepted"))}
-                      aria-describedby={errorFor("privacyAccepted") ? "privacyAccepted-error" : undefined}
-                      {...form.register("privacyAccepted")}
-                    />
-                    <span className="text-sm leading-6 text-stone-800">
-                      Ho letto e accetto l’informativa privacy versione {privacyPolicy.version}.
-                    </span>
-                  </label>
-                  {errorFor("privacyAccepted") && <FieldError id="privacyAccepted-error" message={errorFor("privacyAccepted")!} />}
-                </div>
-              </div>
+              <PrivacyConsentStep
+                policy={privacyPolicy}
+                error={errorFor("privacyAccepted")}
+                registration={form.register("privacyAccepted")}
+              />
             )}
 
             {step === 4 && <RegistrationSummary values={values} />}

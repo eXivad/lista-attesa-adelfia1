@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { ArrowLeft, ExternalLink } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
+import { PrivacyDocumentViewer } from "@/components/privacy/privacy-document-viewer";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { getActivePrivacyPolicySafely } from "@/lib/server/privacy-policy";
 
@@ -11,7 +12,7 @@ export default async function PrivacyPage() {
 
   return (
     <main className="min-h-screen bg-stone-50 px-4 py-8 sm:px-6">
-      <div className="mx-auto max-w-3xl">
+      <div className="mx-auto max-w-6xl">
         <Link className="mb-5 inline-flex min-h-11 items-center gap-2 font-bold text-violet-800" href="/iscrizione">
           <ArrowLeft className="size-4" aria-hidden="true" />
           Torna all’iscrizione
@@ -23,10 +24,7 @@ export default async function PrivacyPage() {
           </CardHeader>
           <CardContent>
             {policy ? (
-              <a className="inline-flex min-h-11 items-center gap-2 font-bold text-violet-800 underline" href={policy.fileUrl} target="_blank" rel="noreferrer">
-                Consulta il documento ufficiale
-                <ExternalLink className="size-4" aria-hidden="true" />
-              </a>
+              <PrivacyDocumentViewer fileUrl={policy.fileUrl} version={policy.version} />
             ) : (
               <p className="text-stone-700">Il documento ufficiale non è ancora configurato. Non inviare dati personali finché non sarà disponibile.</p>
             )}

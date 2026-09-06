@@ -9,8 +9,11 @@ import { getAuth } from "@/lib/server/auth";
 import { requireCapability } from "@/lib/server/session";
 import { getStaffInvitationService } from "@/lib/server/staff";
 import { getGroupBrandingRepository, GROUP_BRANDING_CACHE_TAG } from "@/lib/server/group-branding";
+import { PRIVACY_POLICY_CACHE_TAG } from "@/lib/server/privacy-policy";
 import { groupNameSchema, MAX_GROUP_LOGO_BYTES, validateGroupLogo } from "@/modules/branding/group-branding";
+import { privacyPolicyInputSchema } from "@/modules/privacy/privacy-policy";
 import { StaffInvitationError } from "@/modules/staff/services/staff-invitation.service";
+import { PrismaPrivacyRepository, PrivacyPolicyVersionConflictError } from "@/repositories/prisma/privacy.repository";
 import { monotonicFactory } from "ulid";
 
 export type SettingsActionState = { status: "idle" } | { status: "error"; message: string };
@@ -54,6 +57,42 @@ export async function removeGroupLogoAction(_state: SettingsActionState, _formDa
   revalidatePath("/", "layout");
   revalidatePath("/api/branding/logo");
   redirect("/impostazioni?brandingUpdated=1");
+}
+
+export async function publishPrivacyPolicyAction(
+  _state: SettingsActionState,
+  formData: FormData,
+): Promise<SettingsActionState> {
+  void _state;
+  await requireCapability("privacy:manage");
+  const parsed = privacyPolicyInputSchema.safeParse({
+    version: formData.get("version"),
+    fileUrl: formData.get("fileUrl"),
+  });
+  if (!parsed.success) {
+    return {
+      status: "error",
+      message: parsed.error.issues[0]?.message ?? "Versione o link del PDF non validi.",
+    };
+  }
+
+  try {
+    await new PrismaPrivacyRepository(getPrismaClient()).publish(parsed.data);
+  } catch (error) {
+    if (error instanceof PrivacyPolicyVersionConflictError) {
+      return {
+        status: "error",
+        message: "Questa versione esiste già con un altro link. Inserisci una nuova versione per non alterare i consensi storici.",
+      };
+    }
+    return { status: "error", message: "Non è stato possibile pubblicare l'informativa privacy." };
+  }
+
+  updateTag(PRIVACY_POLICY_CACHE_TAG);
+  revalidatePath("/privacy");
+  revalidatePath("/iscrizione");
+  revalidatePath("/impostazioni");
+  redirect("/impostazioni?privacyUpdated=1#privacy");
 }
 
 const staffSchema = z.object({

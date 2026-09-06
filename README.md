@@ -30,7 +30,7 @@ pnpm run admin:bootstrap
 pnpm run dev
 ```
 
-Prima di `db:seed`, valorizzare `PRIVACY_POLICY_VERSION` e `PRIVACY_POLICY_URL` con il documento reale approvato dal Gruppo. `PRIVACY_POLICY_URL` deve essere un URL assoluto che inizi con `http://` o `https://`. Senza una privacy attiva la pagina pubblica resta intenzionalmente bloccata. Prima di `admin:bootstrap`, valorizzare tutti i campi `BOOTSTRAP_ADMIN_*`, inclusa una password di almeno 12 caratteri.
+Prima di `admin:bootstrap`, valorizzare tutti i campi `BOOTSTRAP_ADMIN_*`, inclusa una password di almeno 12 caratteri. Dopo il primo accesso, aprire **Impostazioni → Informativa privacy** e pubblicare la versione con il link HTTPS diretto al PDF approvato dal Gruppo. Non servono variabili d’ambiente: finché non esiste una versione attiva, la pagina pubblica di iscrizione resta intenzionalmente bloccata.
 
 L'applicazione sarà disponibile su `http://localhost:3000`; PostgreSQL locale usa la porta `5432` e le credenziali di sviluppo presenti in `.env.example`.
 
@@ -57,6 +57,7 @@ I segreti non vanno mai committati. Generare valori indipendenti e casuali di al
 - Anno associativo separato dall'apertura chiamate; candidati calcolati solo dall'anno di nascita.
 - Chiusura chiamate con snapshot anonimo precedente al reset degli inevasi.
 - Dashboard, storico statistico e mailing list interna.
+- Informativa privacy incorporata nella pagina pubblica, con versione attiva e storico gestiti dal Capo Gruppo nelle Impostazioni.
 
 ## Import storico
 
@@ -107,13 +108,14 @@ Lo stato puntuale delle task della specifica è documentato in [docs/backlog-p0-
 2. Configurare Gmail OAuth 2.0, SPF/DKIM/DMARC e il margine di quota seguendo la guida email.
 3. Eseguire `pnpm install --frozen-lockfile`, `pnpm run db:deploy`, `pnpm run db:seed` e `pnpm run build`.
 4. Creare il primo Admin una sola volta con `pnpm run admin:bootstrap`.
-5. Verificare HTTPS, email, privacy, retention e import su staging prima del go-live.
+5. Accedere alle Impostazioni e pubblicare versione e link HTTPS dell’informativa privacy approvata.
+6. Verificare visualizzazione del PDF, email, privacy, retention e import su staging prima del go-live.
 
 Le migrazioni versionate sono in `prisma/migrations`. Non usare `prisma migrate dev` in produzione: usare `prisma migrate deploy` (aggiungibile alla pipeline di deploy).
 
 ## Cache e piattaforma di deployment
 
-Gli asset generati da Next.js in `/_next/static` sono già versionati e memorizzabili a lungo. Il logo configurabile usa a sua volta un URL versionato e risponde con `Cache-Control: public, max-age=31536000, s-maxage=31536000, immutable` ed `ETag`: browser e CDN non devono quindi riscaricarlo finché la versione non cambia. Le impostazioni testuali del branding e l'informativa privacy attiva usano la Data Cache di Next.js per 5 minuti; il branding viene inoltre invalidato immediatamente dalle azioni di modifica.
+Gli asset generati da Next.js in `/_next/static` sono già versionati e memorizzabili a lungo. Il logo configurabile usa a sua volta un URL versionato e risponde con `Cache-Control: public, max-age=31536000, s-maxage=31536000, immutable` ed `ETag`: browser e CDN non devono quindi riscaricarlo finché la versione non cambia. Le impostazioni testuali del branding e l'informativa privacy attiva usano la Data Cache di Next.js per 5 minuti; entrambe vengono inoltre invalidate immediatamente dalle rispettive azioni di modifica.
 
 Questa configurazione è indipendente dal provider. Per sfruttarla completamente, la piattaforma o il CDN deve rispettare `Cache-Control`/`s-maxage` e includere la query string `v` nella chiave di cache. Su un singolo processo Node funziona comunque la cache del browser e quella locale di Next.js; con più repliche serve una Data Cache condivisa oppure si accetta una convergenza massima di 5 minuti tra le istanze.
 
