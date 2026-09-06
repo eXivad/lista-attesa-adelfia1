@@ -44,6 +44,19 @@ test.describe("lista d'attesa deterministica", () => {
       await expect(page.getByRole("heading", { name: heading })).toBeVisible();
     }
   });
+
+  test("apre la modifica di un iscritto dal dettaglio", async ({ page }) => {
+    const applicantId = fixtures.applicants.alice;
+
+    await page.goto(`/iscritti/${applicantId}`);
+    await expect(page.getByRole("heading", { name: "Alice Alpha" })).toBeVisible();
+
+    await page.getByRole("link", { name: "Modifica" }).click();
+
+    await expect(page).toHaveURL(`/iscritti/${applicantId}/modifica`);
+    await expect(page.getByRole("heading", { name: "Modifica Alice Alpha" })).toBeVisible();
+    await expect(page.getByLabel("Nome", { exact: true }).first()).toHaveValue("Alice");
+  });
 });
 
 test.describe("ciclo completo chiamate", () => {

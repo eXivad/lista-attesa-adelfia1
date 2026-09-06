@@ -120,6 +120,11 @@ describe("PrismaApplicantRegistrationRepository", () => {
           create: expect.objectContaining({
             id: "outbox-id",
             recipients: ["anna@example.it", "luigi@example.it", "capigruppo@example.it"],
+            payload: {
+              applicantName: "Mario Rossi",
+              applicantBirthDate: "2018-05-12T00:00:00.000Z",
+              registrationNumber: "LA-2026-000123",
+            },
           }),
         },
       }),

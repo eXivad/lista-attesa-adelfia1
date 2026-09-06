@@ -3,6 +3,7 @@ import "dotenv/config";
 import { z } from "zod";
 
 import { PrismaMailQuotaGuard } from "../repositories/prisma/mail-quota.repository";
+import { PrismaGroupBrandingRepository } from "../repositories/prisma/group-branding.repository";
 import { createScriptGmailMailProvider } from "./gmail-mail-client";
 import { createScriptPrismaClient } from "./prisma-client";
 
@@ -13,7 +14,11 @@ async function main() {
   }
   const recipient = parsedRecipient.data;
   const client = createScriptPrismaClient();
-  const provider = createScriptGmailMailProvider(new PrismaMailQuotaGuard(client));
+  const brandingRepository = new PrismaGroupBrandingRepository(client);
+  const provider = createScriptGmailMailProvider(
+    new PrismaMailQuotaGuard(client),
+    () => brandingRepository.getMailBranding(),
+  );
 
   try {
     await provider.verifyConnection();

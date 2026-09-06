@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { BackofficeShell } from "@/components/layout/backoffice-shell";
-import { getGroupBrandingRepository } from "@/lib/server/group-branding";
+import { getGroupBrandingSettings } from "@/lib/server/group-branding";
 import { getCurrentUser } from "@/lib/server/session";
 
 export const dynamic = "force-dynamic";
@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 export default async function BackofficeLayout({ children }: { children: React.ReactNode }) {
   const [user, branding] = await Promise.all([
     getCurrentUser(),
-    getGroupBrandingRepository().getSettings(),
+    getGroupBrandingSettings(),
   ]);
   if (!user) {
     redirect("/login");

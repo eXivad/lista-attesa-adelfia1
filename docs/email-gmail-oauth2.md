@@ -55,7 +55,7 @@ Nessun codice può garantire che una mail non finisca nello spam. Prima del go-l
 
 Se Google Workspace è l'unico sistema che invia per il dominio, il record SPF tipico include `_spf.google.com`; non copiarlo alla cieca se esistono altri mittenti. DKIM va attivato dalla Console di amministrazione Google. Per DMARC è prudente partire con reporting e policy `p=none`, verificare i report e irrigidire la policy solo dopo aver confermato l'allineamento.
 
-I messaggi generati sono multipart `text/plain` + HTML minimale, senza immagini remote, allegati o contenuti promozionali. I link di invito/reset devono essere HTTPS, salvo `localhost` durante lo sviluppo. Non sono presenti intestazioni di disiscrizione perché si tratta di notifiche operative indispensabili e non di newsletter; eventuali comunicazioni promozionali dovranno usare un flusso separato con consenso e cancellazione.
+I messaggi generati sono multipart `text/plain` + HTML minimale e non usano immagini remote o tracking pixel. Se nelle impostazioni è presente un logo, viene incorporato come singola immagine inline tramite CID: il client di posta non deve richiamare l'applicazione e il contenuto non rivela aperture del messaggio. Il nome del Gruppo proviene dalle stesse impostazioni usate dall'interfaccia; `MAIL_FROM_NAME` rimane il valore di ripiego se il branding non è disponibile. I link di invito/reset devono essere HTTPS, salvo `localhost` durante lo sviluppo. Non sono presenti intestazioni di disiscrizione perché si tratta di notifiche operative indispensabili e non di newsletter; eventuali comunicazioni promozionali dovranno usare un flusso separato con consenso e cancellazione.
 
 ## Collaudo controllato
 
@@ -83,6 +83,7 @@ L'esito del comando significa che Gmail SMTP ha accettato il messaggio, non che 
 - ricezione in Posta in arrivo e non in Spam;
 - intestazioni `Authentication-Results` con SPF, DKIM e DMARC coerenti;
 - mittente, Reply-To, testo semplice, HTML e link;
+- intestazione, nome del Gruppo, firma e logo inline configurato;
 - assenza di destinatari visibili in `To`/`Cc`;
 - eventuali bounce nella casella mittente.
 

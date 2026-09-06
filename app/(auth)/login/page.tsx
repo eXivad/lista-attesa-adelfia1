@@ -4,13 +4,13 @@ import { redirect } from "next/navigation";
 import { LoginForm } from "@/components/auth/login-form";
 import { GroupBrand } from "@/components/branding/group-brand";
 import { Card, CardContent } from "@/components/ui/card";
-import { getGroupBrandingRepository } from "@/lib/server/group-branding";
+import { getGroupBrandingSettings } from "@/lib/server/group-branding";
 import { getCurrentUser } from "@/lib/server/session";
 
 export const dynamic = "force-dynamic";
 
 export default async function LoginPage() {
-  const [user, branding] = await Promise.all([getCurrentUser(), getGroupBrandingRepository().getSettings()]);
+  const [user, branding] = await Promise.all([getCurrentUser(), getGroupBrandingSettings()]);
   if (user) {
     redirect("/dashboard");
   }

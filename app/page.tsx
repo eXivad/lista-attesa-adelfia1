@@ -4,12 +4,12 @@ import { ArrowRight, CalendarDays, Clock3, ShieldCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { GroupBrand } from "@/components/branding/group-brand";
-import { getGroupBrandingRepository } from "@/lib/server/group-branding";
+import { getGroupBrandingSettings } from "@/lib/server/group-branding";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const branding = await getGroupBrandingRepository().getSettings();
+  const branding = await getGroupBrandingSettings();
   const logoUrl = branding.logoVersion ? `/api/branding/logo?v=${encodeURIComponent(branding.logoVersion)}` : null;
   return (
     <main className="flex min-h-screen flex-col bg-stone-50">

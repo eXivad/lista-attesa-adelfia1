@@ -20,7 +20,10 @@ import {
   rejectionConfirmationMail,
   staffInvitationMail,
   type MailContent,
+  type TemplateOptions,
 } from "./gmail-mail-templates";
+
+const MAIL_LOGO_CID = "logo-lista-attesa@agesci";
 
 interface GmailTransportResult {
   accepted: string[];
@@ -43,8 +46,17 @@ export interface GmailSmtpMailProviderOptions {
   dailyRecipientLimit: number;
   maxRecipientsPerMessage: number;
   quotaGuard: MailQuotaGuard;
+  brandingLoader?: () => Promise<GmailMailBranding>;
   transport?: GmailMailTransport;
   clock?: () => Date;
+}
+
+export interface GmailMailBranding {
+  organizationName: string;
+  logo?: {
+    content: Uint8Array;
+    mimeType: string;
+  };
 }
 
 export class MailProviderNotConfiguredError extends Error {
@@ -64,27 +76,37 @@ export class GmailSmtpMailProvider implements MailProvider {
   }
 
   sendRegistrationConfirmation(input: RegistrationMailInput): Promise<void> {
-    return this.send(input.recipients, registrationConfirmationMail(input, this.templateOptions));
+    return this.renderAndSend(input.recipients, (options) =>
+      registrationConfirmationMail(input, options),
+    );
   }
 
   sendAcceptanceConfirmation(input: StatusMailInput): Promise<void> {
-    return this.send(input.recipients, acceptanceConfirmationMail(input, this.templateOptions));
+    return this.renderAndSend(input.recipients, (options) =>
+      acceptanceConfirmationMail(input, options),
+    );
   }
 
   sendRejectionConfirmation(input: StatusMailInput): Promise<void> {
-    return this.send(input.recipients, rejectionConfirmationMail(input, this.templateOptions));
+    return this.renderAndSend(input.recipients, (options) =>
+      rejectionConfirmationMail(input, options),
+    );
   }
 
   sendStaffInvitation(input: StaffInvitationMailInput): Promise<void> {
-    return this.send([input.recipient], staffInvitationMail(input, this.templateOptions));
+    return this.renderAndSend([input.recipient], (options) =>
+      staffInvitationMail(input, options),
+    );
   }
 
   sendPasswordReset(input: PasswordResetMailInput): Promise<void> {
-    return this.send([input.recipient], passwordResetMail(input, this.templateOptions));
+    return this.renderAndSend([input.recipient], (options) =>
+      passwordResetMail(input, options),
+    );
   }
 
   sendDiagnosticMessage(recipient: string): Promise<void> {
-    return this.send([recipient], diagnosticMail(this.templateOptions));
+    return this.renderAndSend([recipient], diagnosticMail);
   }
 
   async verifyConnection(): Promise<void> {
@@ -100,11 +122,43 @@ export class GmailSmtpMailProvider implements MailProvider {
     this.transport.close();
   }
 
-  private get templateOptions() {
-    return { organizationName: this.options.senderName.trim() };
+  private async renderAndSend(
+    recipients: string[],
+    render: (options: TemplateOptions) => MailContent,
+  ): Promise<void> {
+    const branding = await this.loadBranding();
+    const content = render({
+      organizationName: branding.organizationName,
+      ...(branding.logo ? { logoCid: MAIL_LOGO_CID } : {}),
+    });
+    await this.send(recipients, content, branding);
   }
 
-  private async send(recipients: string[], content: MailContent): Promise<void> {
+  private async loadBranding(): Promise<GmailMailBranding> {
+    const fallback = { organizationName: this.options.senderName.trim() };
+    if (!this.options.brandingLoader) return fallback;
+
+    try {
+      const loaded = await this.options.brandingLoader();
+      const organizationName = loaded.organizationName.trim();
+      if (!organizationName || organizationName.length > 120 || /[\r\n]/.test(organizationName)) {
+        return fallback;
+      }
+      return {
+        organizationName,
+        ...(isSupportedInlineLogo(loaded.logo) ? { logo: loaded.logo } : {}),
+      };
+    } catch {
+      console.error("Impossibile caricare il branding per il messaggio email.");
+      return fallback;
+    }
+  }
+
+  private async send(
+    recipients: string[],
+    content: MailContent,
+    branding: GmailMailBranding,
+  ): Promise<void> {
     this.assertConfigured();
     const normalizedRecipients = normalizeRecipients(recipients);
     if (normalizedRecipients.length > this.options.maxRecipientsPerMessage) {
@@ -126,12 +180,23 @@ export class GmailSmtpMailProvider implements MailProvider {
     let result: GmailTransportResult;
     try {
       result = await this.transport.sendMail({
-        from: { name: this.options.senderName.trim(), address: this.options.user.trim().toLowerCase() },
+        from: { name: branding.organizationName, address: this.options.user.trim().toLowerCase() },
         replyTo: (this.options.replyTo || this.options.user).trim().toLowerCase(),
         bcc: normalizedRecipients,
         subject: content.subject,
         text: content.text,
         html: content.html,
+        ...(branding.logo
+          ? {
+              attachments: [{
+                filename: inlineLogoFilename(branding.logo.mimeType),
+                content: Buffer.from(branding.logo.content),
+                contentType: branding.logo.mimeType,
+                contentDisposition: "inline",
+                cid: MAIL_LOGO_CID,
+              }],
+            }
+          : {}),
         headers: { "Auto-Submitted": "auto-generated" },
         disableFileAccess: true,
         disableUrlAccess: true,
@@ -160,6 +225,22 @@ export class GmailSmtpMailProvider implements MailProvider {
       throw new MailProviderNotConfiguredError();
     }
   }
+}
+
+function isSupportedInlineLogo(
+  logo: GmailMailBranding["logo"],
+): logo is NonNullable<GmailMailBranding["logo"]> {
+  return Boolean(
+    logo &&
+      logo.content.byteLength > 0 &&
+      ["image/png", "image/jpeg", "image/webp"].includes(logo.mimeType),
+  );
+}
+
+function inlineLogoFilename(mimeType: string): string {
+  if (mimeType === "image/jpeg") return "logo-gruppo.jpg";
+  if (mimeType === "image/webp") return "logo-gruppo.webp";
+  return "logo-gruppo.png";
 }
 
 function createGmailTransport(options: GmailSmtpMailProviderOptions): GmailMailTransport {

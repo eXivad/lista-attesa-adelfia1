@@ -33,6 +33,13 @@ function setup(overrides: Partial<GmailSmtpMailProviderOptions> = {}) {
     dailyRecipientLimit: 450,
     maxRecipientsPerMessage: 20,
     quotaGuard,
+    brandingLoader: vi.fn(async () => ({
+      organizationName: "AGESCI Adelfia 1",
+      logo: {
+        content: new Uint8Array([0x89, 0x50, 0x4e, 0x47]),
+        mimeType: "image/png",
+      },
+    })),
     transport,
     clock: () => NOW,
     ...overrides,
@@ -46,6 +53,7 @@ describe("GmailSmtpMailProvider", () => {
 
     await provider.sendRegistrationConfirmation({
       applicantName: "Mario Rossi",
+      applicantBirthDate: new Date("2018-05-12T00:00:00.000Z"),
       registrationNumber: "LA-2026-000123",
       recipients: ["Anna@example.it", "anna@example.it", "luigi@example.it"],
     });
@@ -62,7 +70,14 @@ describe("GmailSmtpMailProvider", () => {
       bcc: ["anna@example.it", "luigi@example.it"],
       subject: "Conferma iscrizione lista d'attesa - LA-2026-000123",
       text: expect.stringContaining("Mario Rossi"),
-      html: expect.stringContaining("Iscrizione registrata"),
+      html: expect.stringContaining("Richiesta ricevuta"),
+      attachments: [{
+        filename: "logo-gruppo.png",
+        content: Buffer.from([0x89, 0x50, 0x4e, 0x47]),
+        contentType: "image/png",
+        contentDisposition: "inline",
+        cid: "logo-lista-attesa@agesci",
+      }],
       headers: { "Auto-Submitted": "auto-generated" },
       disableFileAccess: true,
       disableUrlAccess: true,
@@ -111,6 +126,26 @@ describe("GmailSmtpMailProvider", () => {
     expect(quotaGuard.reserve).not.toHaveBeenCalled();
   });
 
+  it("invia con il nome mittente di ripiego se il branding non è disponibile", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const { provider, transport } = setup({
+      brandingLoader: vi.fn(async () => {
+        throw new Error("database branding non disponibile");
+      }),
+    });
+
+    await provider.sendDiagnosticMessage("anna@example.it");
+
+    const message = vi.mocked(transport.sendMail).mock.calls[0][0];
+    expect(message.from).toEqual({ name: "AGESCI Adelfia 1", address: "gruppo@gmail.com" });
+    expect(message.attachments).toBeUndefined();
+    expect(message.html).toContain("AGESCI Adelfia 1");
+    expect(consoleError).toHaveBeenCalledWith(
+      "Impossibile caricare il branding per il messaggio email.",
+    );
+    consoleError.mockRestore();
+  });
+
   it("fallisce prima della quota con configurazione o destinatari non validi", async () => {
     const missing = setup({ refreshToken: "" });
     await expect(missing.provider.sendDiagnosticMessage("anna@example.it"))
@@ -127,6 +162,7 @@ describe("GmailSmtpMailProvider", () => {
     const { provider, quotaGuard, transport } = setup({ maxRecipientsPerMessage: 1 });
     await expect(provider.sendRegistrationConfirmation({
       applicantName: "Mario Rossi",
+      applicantBirthDate: new Date("2018-05-12T00:00:00.000Z"),
       registrationNumber: "LA-2026-000123",
       recipients: ["anna@example.it", "luigi@example.it"],
     })).rejects.toThrow("limite prudenziale");
@@ -161,6 +197,7 @@ describe("GmailSmtpMailProvider", () => {
     const { provider } = setup({ transport });
     await expect(provider.sendRegistrationConfirmation({
       applicantName: "Mario Rossi",
+      applicantBirthDate: new Date("2018-05-12T00:00:00.000Z"),
       registrationNumber: "LA-2026-000123",
       recipients: ["anna@example.it", "luigi@example.it"],
     })).rejects.toThrow("non ha accettato tutti");

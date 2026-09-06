@@ -144,6 +144,7 @@ export class ApplicantRegistrationService {
     try {
       await this.dependencies.mailProvider.sendRegistrationConfirmation({
         applicantName: `${parsed.data.minor.firstName} ${parsed.data.minor.lastName}`,
+        applicantBirthDate: toDate(parsed.data.minor.birthDate),
         registrationNumber: registration.registrationNumber,
         recipients: registration.recipients,
       });

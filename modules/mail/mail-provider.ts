@@ -1,10 +1,15 @@
 export interface RegistrationMailInput {
   applicantName: string;
+  applicantBirthDate: Date;
   registrationNumber: string;
   recipients: string[];
 }
 
-export type StatusMailInput = RegistrationMailInput;
+export interface StatusMailInput {
+  applicantName: string;
+  registrationNumber: string;
+  recipients: string[];
+}
 
 export interface StaffInvitationMailInput {
   recipient: string;

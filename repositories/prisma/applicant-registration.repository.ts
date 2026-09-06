@@ -147,6 +147,7 @@ export class PrismaApplicantRegistrationRepository implements ApplicantRegistrat
                 recipients,
                 payload: {
                   applicantName: `${command.minor.firstName} ${command.minor.lastName}`,
+                  applicantBirthDate: command.minor.birthDate.toISOString(),
                   registrationNumber,
                 },
                 createdAt: command.createdAt,

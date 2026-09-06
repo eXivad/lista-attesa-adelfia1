@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
@@ -8,7 +8,7 @@ import { getPrismaClient } from "@/lib/server/prisma";
 import { getAuth } from "@/lib/server/auth";
 import { requireCapability } from "@/lib/server/session";
 import { getStaffInvitationService } from "@/lib/server/staff";
-import { getGroupBrandingRepository } from "@/lib/server/group-branding";
+import { getGroupBrandingRepository, GROUP_BRANDING_CACHE_TAG } from "@/lib/server/group-branding";
 import { groupNameSchema, MAX_GROUP_LOGO_BYTES, validateGroupLogo } from "@/modules/branding/group-branding";
 import { StaffInvitationError } from "@/modules/staff/services/staff-invitation.service";
 import { monotonicFactory } from "ulid";
@@ -22,6 +22,7 @@ export async function updateGroupNameAction(_state: SettingsActionState, formDat
   const parsed = groupNameSchema.safeParse(formData.get("groupName"));
   if (!parsed.success) return { status: "error", message: parsed.error.issues[0]?.message ?? "Nome del gruppo non valido." };
   await getGroupBrandingRepository().updateGroupName(parsed.data);
+  updateTag(GROUP_BRANDING_CACHE_TAG);
   revalidatePath("/", "layout");
   redirect("/impostazioni?brandingUpdated=1");
 }
@@ -39,6 +40,7 @@ export async function uploadGroupLogoAction(_state: SettingsActionState, formDat
   } catch (error) {
     return { status: "error", message: error instanceof Error ? error.message : "Logo non valido." };
   }
+  updateTag(GROUP_BRANDING_CACHE_TAG);
   revalidatePath("/", "layout");
   revalidatePath("/api/branding/logo");
   redirect("/impostazioni?brandingUpdated=1");
@@ -48,6 +50,7 @@ export async function removeGroupLogoAction(_state: SettingsActionState, _formDa
   void _state; void _formData;
   await requireCapability("branding:manage");
   await getGroupBrandingRepository().removeLogo();
+  updateTag(GROUP_BRANDING_CACHE_TAG);
   revalidatePath("/", "layout");
   revalidatePath("/api/branding/logo");
   redirect("/impostazioni?brandingUpdated=1");

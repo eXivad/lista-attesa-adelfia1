@@ -110,3 +110,11 @@ Lo stato puntuale delle task della specifica è documentato in [docs/backlog-p0-
 5. Verificare HTTPS, email, privacy, retention e import su staging prima del go-live.
 
 Le migrazioni versionate sono in `prisma/migrations`. Non usare `prisma migrate dev` in produzione: usare `prisma migrate deploy` (aggiungibile alla pipeline di deploy).
+
+## Cache e piattaforma di deployment
+
+Gli asset generati da Next.js in `/_next/static` sono già versionati e memorizzabili a lungo. Il logo configurabile usa a sua volta un URL versionato e risponde con `Cache-Control: public, max-age=31536000, s-maxage=31536000, immutable` ed `ETag`: browser e CDN non devono quindi riscaricarlo finché la versione non cambia. Le impostazioni testuali del branding e l'informativa privacy attiva usano la Data Cache di Next.js per 5 minuti; il branding viene inoltre invalidato immediatamente dalle azioni di modifica.
+
+Questa configurazione è indipendente dal provider. Per sfruttarla completamente, la piattaforma o il CDN deve rispettare `Cache-Control`/`s-maxage` e includere la query string `v` nella chiave di cache. Su un singolo processo Node funziona comunque la cache del browser e quella locale di Next.js; con più repliche serve una Data Cache condivisa oppure si accetta una convergenza massima di 5 minuti tra le istanze.
+
+Le risposte autenticate, le sessioni, il rate limiting e i dati personali degli iscritti non devono essere inseriti in una cache CDN condivisa. Nel repository non è ancora configurato un provider di deployment specifico: prima del rilascio vanno verificati questi requisiti sulla piattaforma scelta.

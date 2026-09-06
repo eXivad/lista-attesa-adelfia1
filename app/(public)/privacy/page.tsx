@@ -2,18 +2,12 @@ import Link from "next/link";
 import { ArrowLeft, ExternalLink } from "lucide-react";
 
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { getPrismaClient } from "@/lib/server/prisma";
-import { PrismaPrivacyRepository } from "@/repositories/prisma/privacy.repository";
+import { getActivePrivacyPolicySafely } from "@/lib/server/privacy-policy";
 
 export const dynamic = "force-dynamic";
 
 export default async function PrivacyPage() {
-  let policy = null;
-  try {
-    policy = await new PrismaPrivacyRepository(getPrismaClient()).getActive();
-  } catch {
-    // La pagina comunica in modo esplicito lo stato di configurazione.
-  }
+  const policy = await getActivePrivacyPolicySafely();
 
   return (
     <main className="min-h-screen bg-stone-50 px-4 py-8 sm:px-6">

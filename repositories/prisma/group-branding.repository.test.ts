@@ -32,4 +32,41 @@ describe("PrismaGroupBrandingRepository", () => {
     expect(transaction.groupSettings.upsert).toHaveBeenCalledWith(expect.objectContaining({ update: { logoAssetId: "new-logo" } }));
     expect(transaction.groupLogoAsset.deleteMany).toHaveBeenCalledWith({ where: { id: "old-logo" } });
   });
+
+  it("fornisce nome e logo binario per le email", async () => {
+    const content = new Uint8Array([1, 2, 3]);
+    const client = {
+      groupSettings: {
+        findUnique: vi.fn(async () => ({
+          groupName: "AGESCI Adelfia 1",
+          logoAsset: { content, mimeType: "image/png" },
+        })),
+      },
+    };
+
+    await expect(new PrismaGroupBrandingRepository(client as never).getMailBranding())
+      .resolves.toEqual({
+        organizationName: "AGESCI Adelfia 1",
+        logo: { content, mimeType: "image/png" },
+      });
+  });
+
+  it("restituisce il logo con una versione stabile per la cache HTTP", async () => {
+    const createdAt = new Date("2026-09-05T10:00:00.000Z");
+    const content = new Uint8Array([1, 2, 3]);
+    const client = {
+      groupSettings: {
+        findUnique: vi.fn(async () => ({
+          logoAsset: { id: "logo-id", createdAt, content, mimeType: "image/png", byteSize: 3 },
+        })),
+      },
+    };
+
+    await expect(new PrismaGroupBrandingRepository(client as never).getCurrentLogo()).resolves.toEqual({
+      content,
+      mimeType: "image/png",
+      byteSize: 3,
+      version: `logo-id-${createdAt.getTime()}`,
+    });
+  });
 });

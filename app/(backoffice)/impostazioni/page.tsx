@@ -4,7 +4,7 @@ import { UsersRound } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { GroupLogoForm, GroupNameForm, MailingRecipientForm, SettingsDangerForm, StaffEditForm, StaffInvitationForm } from "@/components/settings/settings-forms";
 import { formatDateTime } from "@/lib/date-time";
-import { getGroupBrandingRepository } from "@/lib/server/group-branding";
+import { getGroupBrandingSettings } from "@/lib/server/group-branding";
 import { getPrismaClient } from "@/lib/server/prisma";
 import { requireCapability } from "@/lib/server/session";
 import { addMailingRecipientAction, deleteStaffAction, inviteStaffAction, removeGroupLogoAction, removeMailingRecipientAction, resendInvitationAction, sendStaffPasswordResetAction, updateGroupNameAction, updateStaffAction, uploadGroupLogoAction } from "./actions";
@@ -17,7 +17,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
     getPrismaClient().user.findMany({ orderBy: [{ role: "asc" }, { lastName: "asc" }], select: { id: true, firstName: true, lastName: true, email: true, memberCode: true, role: true } }),
     getPrismaClient().staffInvitation.findMany({ where: { acceptedAt: null }, orderBy: { createdAt: "desc" } }),
     getPrismaClient().mailingRecipient.findMany({ orderBy: { email: "asc" } }),
-    getGroupBrandingRepository().getSettings(),
+    getGroupBrandingSettings(),
     searchParams,
   ]);
   const notice = messages.invited === "1" ? "Invito creato. Controlla lo stato di consegna email."

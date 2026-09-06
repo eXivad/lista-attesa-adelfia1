@@ -32,6 +32,29 @@ export class PrismaGroupBrandingRepository {
     };
   }
 
+  async getMailBranding() {
+    const settings = await this.client.groupSettings.findUnique({
+      where: { id: GROUP_SETTINGS_ID },
+      select: {
+        groupName: true,
+        logoAsset: {
+          select: { content: true, mimeType: true },
+        },
+      },
+    });
+    return {
+      organizationName: settings?.groupName ?? DEFAULT_GROUP_NAME,
+      ...(settings?.logoAsset
+        ? {
+            logo: {
+              content: settings.logoAsset.content,
+              mimeType: settings.logoAsset.mimeType,
+            },
+          }
+        : {}),
+    };
+  }
+
   async updateGroupName(groupName: string) {
     await this.client.groupSettings.upsert({
       where: { id: GROUP_SETTINGS_ID },
@@ -81,8 +104,16 @@ export class PrismaGroupBrandingRepository {
   async getCurrentLogo() {
     const settings = await this.client.groupSettings.findUnique({
       where: { id: GROUP_SETTINGS_ID },
-      select: { logoAsset: { select: { content: true, mimeType: true, byteSize: true } } },
+      select: { logoAsset: { select: { id: true, createdAt: true, content: true, mimeType: true, byteSize: true } } },
     });
-    return settings?.logoAsset ?? null;
+    const logo = settings?.logoAsset;
+    if (!logo) return null;
+
+    return {
+      content: logo.content,
+      mimeType: logo.mimeType,
+      byteSize: logo.byteSize,
+      version: `${logo.id}-${logo.createdAt.getTime()}`,
+    };
   }
 }

@@ -1,8 +1,14 @@
 import type { MailQuotaGuard } from "../modules/mail/mail-quota";
-import { GmailSmtpMailProvider } from "../providers/mail/gmail-smtp-mail-provider";
+import {
+  GmailSmtpMailProvider,
+  type GmailMailBranding,
+} from "../providers/mail/gmail-smtp-mail-provider";
 import { getMailEnvironment } from "../lib/server/environment";
 
-export function createScriptGmailMailProvider(quotaGuard: MailQuotaGuard): GmailSmtpMailProvider {
+export function createScriptGmailMailProvider(
+  quotaGuard: MailQuotaGuard,
+  brandingLoader?: () => Promise<GmailMailBranding>,
+): GmailSmtpMailProvider {
   const environment = getMailEnvironment();
   return new GmailSmtpMailProvider({
     user: environment.GMAIL_USER,
@@ -14,5 +20,6 @@ export function createScriptGmailMailProvider(quotaGuard: MailQuotaGuard): Gmail
     dailyRecipientLimit: environment.GMAIL_DAILY_RECIPIENT_LIMIT,
     maxRecipientsPerMessage: environment.GMAIL_MAX_RECIPIENTS_PER_MESSAGE,
     quotaGuard,
+    brandingLoader,
   });
 }
