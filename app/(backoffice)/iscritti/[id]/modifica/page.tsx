@@ -16,6 +16,24 @@ export default async function ApplicantEditPage({ params }: { params: Promise<{ 
   const { id } = await params;
   const { entry } = await new PrismaApplicantQueryRepository(getPrismaClient()).getById(id);
   if (!entry) notFound();
+  const guardianValues = (["A", "B"] as const).map((type) => {
+    const guardian = entry.guardians.find((item) => item.type === type);
+    return {
+      type,
+      firstName: guardian?.firstName ?? "",
+      lastName: guardian?.lastName ?? "",
+      birthDate: dateInput(guardian?.birthDate ?? null),
+      birthPlace: guardian?.birthPlace ?? "",
+      birthProvince: guardian?.birthProvince ?? "",
+      fiscalCode: guardian?.fiscalCode ?? "",
+      address: guardian?.address ?? "",
+      city: guardian?.city ?? "",
+      province: guardian?.province ?? "",
+      postalCode: guardian?.postalCode ?? "",
+      email: guardian?.email ?? "",
+      phone: guardian?.phone ?? "",
+    };
+  });
 
   return (
     <div className="space-y-6">
@@ -33,36 +51,22 @@ export default async function ApplicantEditPage({ params }: { params: Promise<{ 
             lastName: entry.lastName,
             gender: entry.gender,
             birthDate: dateInput(entry.birthDate),
-            birthPlace: entry.birthPlace,
-            birthProvince: entry.birthProvince,
-            fiscalCode: entry.fiscalCode,
-            residenceAddress: entry.residenceAddress,
-            residenceCity: entry.residenceCity,
-            residenceProvince: entry.residenceProvince,
-            residencePostalCode: entry.residencePostalCode,
+            birthPlace: entry.birthPlace ?? "",
+            birthProvince: entry.birthProvince ?? "",
+            fiscalCode: entry.fiscalCode ?? "",
+            residenceAddress: entry.residenceAddress ?? "",
+            residenceCity: entry.residenceCity ?? "",
+            residenceProvince: entry.residenceProvince ?? "",
+            residencePostalCode: entry.residencePostalCode ?? "",
             notes: entry.notes,
           },
-          guardians: entry.guardians.map((guardian) => ({
-            type: guardian.type,
-            firstName: guardian.firstName,
-            lastName: guardian.lastName,
-            birthDate: dateInput(guardian.birthDate),
-            birthPlace: guardian.birthPlace,
-            birthProvince: guardian.birthProvince,
-            fiscalCode: guardian.fiscalCode,
-            address: guardian.address,
-            city: guardian.city,
-            province: guardian.province,
-            postalCode: guardian.postalCode,
-            email: guardian.email,
-            phone: guardian.phone,
-          })),
+          guardians: guardianValues,
         }}
       />
     </div>
   );
 }
 
-function dateInput(date: Date): string {
-  return date.toISOString().slice(0, 10);
+function dateInput(date: Date | null): string {
+  return date?.toISOString().slice(0, 10) ?? "";
 }

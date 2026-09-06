@@ -24,6 +24,7 @@
     "db:seed": "tsx prisma/seed.ts",
     "admin:bootstrap": "tsx scripts/bootstrap-admin.ts",
     "import:waiting-list": "tsx scripts/import-waiting-list.ts",
+    "verify:waiting-list": "tsx scripts/verify-waiting-list-import.ts",
     "mail:verify": "tsx scripts/verify-gmail-smtp.ts",
     "mail:test": "tsx scripts/send-test-email.ts",
     "retention": "tsx scripts/run-retention.ts"

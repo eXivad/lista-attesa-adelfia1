@@ -38,6 +38,10 @@ export default async function ApplicantDetailPage({
     result.branchConfiguration,
   );
   const messages = await searchParams;
+  const hasIncompleteHistoricalData = !entry.privacyAccepted
+    || !entry.fiscalCode
+    || !entry.birthPlace
+    || entry.guardians.length < 2;
 
   return (
     <div className="space-y-6">
@@ -55,6 +59,11 @@ export default async function ApplicantDetailPage({
           {messages.updated === "1"
             ? "Dati aggiornati correttamente."
             : "Stato aggiornato correttamente."}
+        </p>
+      )}
+      {hasIncompleteHistoricalData && (
+        <p role="status" className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+          Record storico con dati incompleti. I valori mancanti sono indicati come “Da completare” e possono essere aggiunti dalla pagina di modifica.
         </p>
       )}
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -133,8 +142,13 @@ export default async function ApplicantDetailPage({
               ],
               ["CAP", entry.residencePostalCode || "Da completare"],
               ["Branca calcolata", branch ?? "Fuori branca"],
-              ["Versione privacy", entry.privacyPolicyVersion],
-              ["Consenso privacy", formatDateTime(entry.privacyAcceptedAt)],
+              ["Versione privacy", entry.privacyPolicyVersion ?? "Non registrata (dato storico)"],
+              [
+                "Consenso privacy",
+                entry.privacyAccepted && entry.privacyAcceptedAt
+                  ? formatDateTime(entry.privacyAcceptedAt)
+                  : "Non registrato (dato storico)",
+              ],
             ]}
           />
         </CardContent>
@@ -152,7 +166,7 @@ export default async function ApplicantDetailPage({
               rows={[
                 ["Nome", guardian.firstName],
                 ["Cognome", guardian.lastName],
-                ["Data di nascita", formatDate(guardian.birthDate)],
+                ["Data di nascita", guardian.birthDate ? formatDate(guardian.birthDate) : null],
                 ["Luogo di nascita", guardian.birthPlace],
                 ["Provincia di nascita", guardian.birthProvince],
                 ["Codice Fiscale", guardian.fiscalCode],
@@ -167,6 +181,17 @@ export default async function ApplicantDetailPage({
           </CardContent>
         </Card>
       ))}
+
+      {entry.guardians.length === 0 && (
+        <Card>
+          <CardHeader>
+            <h2 className="font-slab text-xl font-bold text-violet-950">Genitori</h2>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-stone-700">Nessun dato disponibile. Puoi completarli dalla pagina di modifica.</p>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>
@@ -200,7 +225,7 @@ export default async function ApplicantDetailPage({
   );
 }
 
-function InfoGrid({ rows }: { rows: Array<[string, string]> }) {
+function InfoGrid({ rows }: { rows: Array<[string, string | null]> }) {
   return (
     <dl className="grid gap-x-8 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
       {rows.map(([label, value]) => (
@@ -209,7 +234,7 @@ function InfoGrid({ rows }: { rows: Array<[string, string]> }) {
             {label}
           </dt>
           <dd className="mt-1 break-words text-sm font-medium text-stone-900">
-            {value}
+            {value || "Da completare"}
           </dd>
         </div>
       ))}

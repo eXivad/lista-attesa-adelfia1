@@ -14,7 +14,7 @@ function createClient() {
       })),
       deleteMany: vi.fn(async () => ({ count: 1 })),
     },
-    guardian: { update: vi.fn(async () => ({})) },
+    guardian: { upsert: vi.fn(async () => ({})) },
     callParticipation: { updateMany: vi.fn(async () => ({ count: 1 })) },
     blockedIdentifier: { upsert: vi.fn(async () => ({})) },
     mailOutbox: { create: vi.fn(async () => ({})) },
@@ -85,9 +85,12 @@ describe("PrismaApplicantMutationRepository", () => {
         residencePostalCode: "70010",
       }),
     });
-    expect(transaction.guardian.update).toHaveBeenCalledTimes(2);
-    expect(transaction.guardian.update).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ postalCode: "70010" }) }),
+    expect(transaction.guardian.upsert).toHaveBeenCalledTimes(2);
+    expect(transaction.guardian.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        update: expect.objectContaining({ postalCode: "70010" }),
+        create: expect.objectContaining({ applicantId: "applicant-1", postalCode: "70010" }),
+      }),
     );
   });
 

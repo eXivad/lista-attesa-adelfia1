@@ -57,23 +57,23 @@ enum MailDeliveryStatus {
 }
 
 model User {
-  id             String   @id @db.VarChar(36)
-  name           String
-  firstName      String
-  lastName       String
-  email          String   @unique
-  emailVerified  Boolean  @default(false)
-  image          String?
-  memberCode     String   @unique
-  role           UserRole @default(STAFF)
-  banned         Boolean  @default(false)
-  banReason      String?
-  banExpires     DateTime? @db.Timestamptz(3)
-  createdAt      DateTime @default(now()) @db.Timestamptz(3)
-  updatedAt      DateTime @updatedAt @db.Timestamptz(3)
+  id            String    @id @db.VarChar(36)
+  name          String
+  firstName     String
+  lastName      String
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  image         String?
+  memberCode    String    @unique
+  role          UserRole  @default(STAFF)
+  banned        Boolean   @default(false)
+  banReason     String?
+  banExpires    DateTime? @db.Timestamptz(3)
+  createdAt     DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime  @updatedAt @db.Timestamptz(3)
 
-  sessions          Session[]
-  accounts          Account[]
+  sessions           Session[]
+  accounts           Account[]
   createdInvitations StaffInvitation[] @relation("InvitationCreator")
 }
 
@@ -111,8 +111,8 @@ model Account {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId])
   @@unique([issuer, accountId])
+  @@index([userId])
 }
 
 model Verification {
@@ -127,19 +127,19 @@ model Verification {
 }
 
 model StaffInvitation {
-  id          String    @id @db.VarChar(26)
-  firstName   String
-  lastName    String
-  email       String
-  memberCode  String
-  role        UserRole
-  tokenHash   String    @unique
-  expiresAt   DateTime  @db.Timestamptz(3)
-  acceptedAt  DateTime? @db.Timestamptz(3)
-  createdAt   DateTime  @default(now()) @db.Timestamptz(3)
-  createdById String?   @db.VarChar(36)
-  pendingEmail String?  @unique
-  pendingMemberCode String? @unique
+  id                String    @id @db.VarChar(26)
+  firstName         String
+  lastName          String
+  email             String
+  memberCode        String
+  role              UserRole
+  tokenHash         String    @unique
+  expiresAt         DateTime  @db.Timestamptz(3)
+  acceptedAt        DateTime? @db.Timestamptz(3)
+  createdAt         DateTime  @default(now()) @db.Timestamptz(3)
+  createdById       String?   @db.VarChar(36)
+  pendingEmail      String?   @unique
+  pendingMemberCode String?   @unique
 
   createdBy User? @relation("InvitationCreator", fields: [createdById], references: [id], onDelete: SetNull)
 
@@ -147,30 +147,30 @@ model StaffInvitation {
 }
 
 model WaitingListEntry {
-  id                    String          @id @db.VarChar(26)
-  registrationNumber    String          @unique @db.VarChar(20)
-  firstName             String
-  lastName              String
-  gender                ApplicantGender
-  birthDate             DateTime        @db.Date
-  birthYear             Int
-  birthPlace            String
-  birthProvince         String          @db.Char(2)
-  fiscalCode            String          @unique @db.Char(16)
-  residenceAddress      String
-  residenceCity         String
-  residenceProvince     String          @db.Char(2)
-  residencePostalCode   String          @db.VarChar(12)
-  notes                 String          @default("") @db.Text
-  status                ApplicantStatus @default(IN_ATTESA)
-  terminalStatusAt      DateTime?       @db.Timestamptz(3)
-  privacyAccepted       Boolean
-  privacyAcceptedAt     DateTime        @db.Timestamptz(3)
-  privacyPolicyVersion  String
-  createdAt             DateTime        @default(now()) @db.Timestamptz(3)
-  updatedAt             DateTime        @updatedAt @db.Timestamptz(3)
+  id                   String          @id @db.VarChar(26)
+  registrationNumber   String          @unique @db.VarChar(20)
+  firstName            String
+  lastName             String
+  gender               ApplicantGender
+  birthDate            DateTime        @db.Date
+  birthYear            Int
+  birthPlace           String?
+  birthProvince        String?         @db.Char(2)
+  fiscalCode           String?         @unique @db.Char(16)
+  residenceAddress     String?
+  residenceCity        String?
+  residenceProvince    String?         @db.Char(2)
+  residencePostalCode  String?         @db.VarChar(12)
+  notes                String          @default("") @db.Text
+  status               ApplicantStatus @default(IN_ATTESA)
+  terminalStatusAt     DateTime?       @db.Timestamptz(3)
+  privacyAccepted      Boolean
+  privacyAcceptedAt    DateTime?       @db.Timestamptz(3)
+  privacyPolicyVersion String?
+  createdAt            DateTime        @default(now()) @db.Timestamptz(3)
+  updatedAt            DateTime        @updatedAt @db.Timestamptz(3)
 
-  privacyPolicy  PrivacyPolicyVersion @relation(fields: [privacyPolicyVersion], references: [version], onUpdate: Cascade, onDelete: Restrict)
+  privacyPolicy  PrivacyPolicyVersion? @relation(fields: [privacyPolicyVersion], references: [version], onUpdate: Cascade, onDelete: Restrict)
   guardians      Guardian[]
   participations CallParticipation[]
   mailOutbox     MailOutbox[]
@@ -183,23 +183,23 @@ model WaitingListEntry {
 }
 
 model Guardian {
-  id              String       @id @db.VarChar(26)
-  applicantId     String       @db.VarChar(26)
-  type            GuardianType
-  firstName       String
-  lastName        String
-  birthDate       DateTime     @db.Date
-  birthPlace      String
-  birthProvince   String       @db.Char(2)
-  fiscalCode      String       @db.Char(16)
-  address         String
-  city            String
-  province        String       @db.Char(2)
-  postalCode      String       @db.VarChar(12)
-  email           String
-  phone           String
-  createdAt       DateTime     @default(now()) @db.Timestamptz(3)
-  updatedAt       DateTime     @updatedAt @db.Timestamptz(3)
+  id            String       @id @db.VarChar(26)
+  applicantId   String       @db.VarChar(26)
+  type          GuardianType
+  firstName     String?
+  lastName      String?
+  birthDate     DateTime?    @db.Date
+  birthPlace    String?
+  birthProvince String?      @db.Char(2)
+  fiscalCode    String?      @db.Char(16)
+  address       String?
+  city          String?
+  province      String?      @db.Char(2)
+  postalCode    String?      @db.VarChar(12)
+  email         String?
+  phone         String?
+  createdAt     DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime     @updatedAt @db.Timestamptz(3)
 
   applicant WaitingListEntry @relation(fields: [applicantId], references: [id], onDelete: Cascade)
 
@@ -210,16 +210,16 @@ model Guardian {
 }
 
 model AssociativeYear {
-  id             String                @id @db.VarChar(26)
-  label          String                @unique @db.VarChar(9)
-  startYear      Int                   @unique
-  endYear        Int
-  status         AssociativeYearStatus @default(CREATED)
-  currentKey     Int?                  @unique
-  callsOpenedAt  DateTime?             @db.Timestamptz(3)
-  callsClosedAt  DateTime?             @db.Timestamptz(3)
-  createdAt      DateTime              @default(now()) @db.Timestamptz(3)
-  updatedAt      DateTime              @updatedAt @db.Timestamptz(3)
+  id            String                @id @db.VarChar(26)
+  label         String                @unique @db.VarChar(9)
+  startYear     Int                   @unique
+  endYear       Int
+  status        AssociativeYearStatus @default(CREATED)
+  currentKey    Int?                  @unique
+  callsOpenedAt DateTime?             @db.Timestamptz(3)
+  callsClosedAt DateTime?             @db.Timestamptz(3)
+  createdAt     DateTime              @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime              @updatedAt @db.Timestamptz(3)
 
   participations CallParticipation[]
   statistics     AnnualStatistics[]
@@ -236,7 +236,7 @@ model CallParticipation {
   createdAt         DateTime        @default(now()) @db.Timestamptz(3)
   updatedAt         DateTime        @updatedAt @db.Timestamptz(3)
 
-  associativeYear AssociativeYear  @relation(fields: [associativeYearId], references: [id], onDelete: Restrict)
+  associativeYear AssociativeYear   @relation(fields: [associativeYearId], references: [id], onDelete: Restrict)
   applicant       WaitingListEntry? @relation(fields: [applicantId], references: [id], onDelete: SetNull)
 
   @@unique([associativeYearId, applicantId])
@@ -283,7 +283,7 @@ model BlockedIdentifier {
 }
 
 model BranchConfiguration {
-  branch    Branch @id
+  branch    Branch   @id
   minAge    Int
   maxAge    Int
   entryAge  Int
@@ -292,9 +292,9 @@ model BranchConfiguration {
 }
 
 model GroupSettings {
-  id          String  @id @db.VarChar(26)
-  groupName   String  @db.VarChar(120)
-  logoAssetId String? @unique @db.VarChar(26)
+  id          String   @id @db.VarChar(26)
+  groupName   String   @db.VarChar(120)
+  logoAssetId String?  @unique @db.VarChar(26)
   createdAt   DateTime @default(now()) @db.Timestamptz(3)
   updatedAt   DateTime @updatedAt @db.Timestamptz(3)
 

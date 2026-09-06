@@ -29,7 +29,7 @@ export interface ApplicantMutationSummary {
   registrationNumber: string;
   firstName: string;
   lastName: string;
-  fiscalCode: string;
+  fiscalCode: string | null;
   status: ApplicantStatus;
   recipients: string[];
 }
@@ -131,7 +131,7 @@ export class ApplicantMutationService {
       from: applicant.status,
       to: targetStatus,
       changedAt: now,
-      ...(targetStatus === "RIFIUTATO"
+      ...(targetStatus === "RIFIUTATO" && applicant.fiscalCode
         ? { blockedIdentifierHash: hashFiscalCode(applicant.fiscalCode, this.dependencies.hmacSecret) }
         : {}),
     });
@@ -175,7 +175,7 @@ export class ApplicantMutationService {
     const applicant = await this.requireApplicant(id);
     const deleted = await this.dependencies.repository.deleteApplicant({
       id,
-      ...(applicant.status === "RIFIUTATO"
+      ...(applicant.status === "RIFIUTATO" && applicant.fiscalCode
         ? { blockedIdentifierHash: hashFiscalCode(applicant.fiscalCode, this.dependencies.hmacSecret) }
         : {}),
     });

@@ -41,6 +41,14 @@ yarn-error.log*
 /reports/
 /generated/prisma/
 
+# real waiting-list exports and database backups contain personal data
+/docs/import-*.csv
+!/docs/import-template.csv
+/docs/import-*.xlsx
+/data/
+/backups/
+*.dump
+
 # vercel
 .vercel
 

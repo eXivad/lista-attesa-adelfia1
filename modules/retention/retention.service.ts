@@ -4,7 +4,7 @@ import type { ApplicantStatus } from "@/modules/applicants/domain/state-machine"
 export interface RetentionCandidate {
   id: string;
   status: ApplicantStatus;
-  fiscalCode: string;
+  fiscalCode: string | null;
 }
 
 export interface RetentionDeleteCommand {
@@ -33,7 +33,9 @@ export class RetentionService {
     const candidates = await this.options.repository.findCandidates({ terminalOnOrBefore, bornOnOrBefore });
     const commands = candidates.map((candidate) => ({
       id: candidate.id,
-      ...(candidate.status === "RIFIUTATO" ? { blockedIdentifierHash: hashFiscalCode(candidate.fiscalCode, this.options.hmacSecret) } : {}),
+      ...(candidate.status === "RIFIUTATO" && candidate.fiscalCode
+        ? { blockedIdentifierHash: hashFiscalCode(candidate.fiscalCode, this.options.hmacSecret) }
+        : {}),
     }));
     const deleted = apply && commands.length > 0 ? await this.options.repository.deleteCandidates(commands) : 0;
     return { mode: apply ? "APPLY" as const : "DRY_RUN" as const, candidates: candidates.length, deleted, candidateIds: candidates.map(({ id }) => id) };

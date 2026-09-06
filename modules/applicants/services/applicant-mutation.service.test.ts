@@ -117,6 +117,27 @@ describe("ApplicantMutationService", () => {
     );
   });
 
+  it("non inventa un identificatore di blocco per un record storico senza Codice Fiscale", async () => {
+    const rejecting = setup();
+    vi.mocked(rejecting.repository.getApplicant).mockResolvedValueOnce({
+      ...APPLICANT,
+      fiscalCode: null,
+    });
+    await rejecting.service.changeStatus("applicant-1", "RIFIUTATO");
+    expect(rejecting.repository.transitionStatus).toHaveBeenCalledWith(
+      expect.not.objectContaining({ blockedIdentifierHash: expect.anything() }),
+    );
+
+    const deleting = setup("RIFIUTATO");
+    vi.mocked(deleting.repository.getApplicant).mockResolvedValueOnce({
+      ...APPLICANT,
+      fiscalCode: null,
+      status: "RIFIUTATO",
+    });
+    await deleting.service.delete("applicant-1");
+    expect(deleting.repository.deleteApplicant).toHaveBeenCalledWith({ id: "applicant-1" });
+  });
+
   it("segnala record assente o aggiornato in concorrenza", async () => {
     const absent = setup();
     vi.mocked(absent.repository.getApplicant).mockResolvedValueOnce(null);

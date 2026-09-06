@@ -35,6 +35,7 @@ const detailSelection = {
   residencePostalCode: true,
   notes: true,
   status: true,
+  privacyAccepted: true,
   privacyPolicyVersion: true,
   privacyAcceptedAt: true,
   terminalStatusAt: true,

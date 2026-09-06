@@ -9,6 +9,7 @@ it("seleziona terminali oltre retention e fuori età, preservando solo l'HMAC de
       { id: "rejected", status: "RIFIUTATO" as const, fiscalCode: "RSSMRA18E12A662X" },
       { id: "accepted", status: "ACCETTATO" as const, fiscalCode: "VRDNNA85C41A662Z" },
       { id: "old", status: "IN_ATTESA" as const, fiscalCode: "RSSLGU83M22A662Y" },
+      { id: "legacy-rejected", status: "RIFIUTATO" as const, fiscalCode: null },
     ]),
     deleteCandidates: vi.fn(async (commands) => commands.length),
   };
@@ -16,14 +17,15 @@ it("seleziona terminali oltre retention e fuori età, preservando solo l'HMAC de
 
   const preview = await service.run({ retentionDays: 365, apply: false });
   expect(repository.findCandidates).toHaveBeenCalledWith({ terminalOnOrBefore: new Date("2025-09-03T12:00:00Z"), bornOnOrBefore: new Date("2004-09-03T00:00:00Z") });
-  expect(preview).toMatchObject({ candidates: 3, deleted: 0 });
+  expect(preview).toMatchObject({ candidates: 4, deleted: 0 });
   expect(repository.deleteCandidates).not.toHaveBeenCalled();
 
   const result = await service.run({ retentionDays: 365, apply: true });
-  expect(result.deleted).toBe(3);
+  expect(result.deleted).toBe(4);
   expect(repository.deleteCandidates).toHaveBeenCalledWith(expect.arrayContaining([
     { id: "rejected", blockedIdentifierHash: expect.stringMatching(/^[a-f0-9]{64}$/) },
     { id: "accepted" },
     { id: "old" },
+    { id: "legacy-rejected" },
   ]));
 });

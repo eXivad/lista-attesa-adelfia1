@@ -66,21 +66,28 @@ export class PrismaApplicantMutationRepository implements ApplicantMutationRepos
       if (updated.count !== 1) return false;
 
       for (const guardian of command.guardians) {
-        await transaction.guardian.update({
+        const data = {
+          firstName: guardian.firstName,
+          lastName: guardian.lastName,
+          birthDate: guardian.birthDate,
+          birthPlace: guardian.birthPlace,
+          birthProvince: guardian.birthProvince,
+          fiscalCode: guardian.fiscalCode,
+          address: guardian.address,
+          city: guardian.city,
+          province: guardian.province,
+          postalCode: guardian.postalCode,
+          email: guardian.email,
+          phone: guardian.phone,
+        };
+        await transaction.guardian.upsert({
           where: { applicantId_type: { applicantId: id, type: guardian.type } },
-          data: {
-            firstName: guardian.firstName,
-            lastName: guardian.lastName,
-            birthDate: guardian.birthDate,
-            birthPlace: guardian.birthPlace,
-            birthProvince: guardian.birthProvince,
-            fiscalCode: guardian.fiscalCode,
-            address: guardian.address,
-            city: guardian.city,
-            province: guardian.province,
-            postalCode: guardian.postalCode,
-            email: guardian.email,
-            phone: guardian.phone,
+          update: data,
+          create: {
+            id: this.createId(),
+            applicantId: id,
+            type: guardian.type,
+            ...data,
           },
         });
       }
@@ -207,6 +214,10 @@ export class PrismaApplicantMutationRepository implements ApplicantMutationRepos
   }
 }
 
-function uniqueEmails(emails: string[]): string[] {
-  return [...new Set(emails.map((email) => email.trim().toLowerCase()))];
+function uniqueEmails(emails: Array<string | null | undefined>): string[] {
+  return [...new Set(
+    emails
+      .filter((email): email is string => Boolean(email?.trim()))
+      .map((email) => email.trim().toLowerCase()),
+  )];
 }
