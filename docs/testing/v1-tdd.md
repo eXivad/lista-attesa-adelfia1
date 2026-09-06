@@ -35,3 +35,11 @@ Ultima verifica locale del 5 settembre 2026 su PostgreSQL 18 isolato:
 - Coverage: 93,52% statement, 85,42% branch, 92,42% funzioni e 95,62% linee.
 - Build di produzione, ESLint, TypeScript e validazione/migrazioni Prisma superati.
 - Collaudo Gmail OAuth 2.0 personale superato: connessione TLS verificata, messaggio diagnostico ricevuto e intestazioni SPF, DKIM e DMARC tutte valide.
+
+Aggiornamento del 6 settembre 2026 dopo il supporto agli archivi storici e la semplificazione della navigazione:
+
+- 43 file di test e 162 test unitari/integrativi superati.
+- Coverage: 93,64% statement, 85,96% branch, 94,44% funzioni e 95,59% linee.
+- Validazione Prisma, ESLint, TypeScript e build di produzione superati; l'audit pnpm non rileva vulnerabilità note.
+- Import reale eseguito dopo backup e dry-run, quindi riconciliato in forma aggregata: 151 iscritti e 165 tutori.
+- Gli E2E non sono stati rieseguiti sul database locale contenente i dati reali, per evitare l'uso dell'endpoint distruttivo di reset; resta valida la precedente evidenza sul database isolato.

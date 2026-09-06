@@ -1,6 +1,6 @@
 # Audit backlog P0–P2
 
-Audit del 5 settembre 2026 basato sulla specifica funzionale, sul codice, sui test e sulla configurazione locale. Gli stati significano:
+Audit aggiornato al 6 settembre 2026, basato sulla specifica funzionale, sul codice, sui test e sulla configurazione locale. Gli stati significano:
 
 - ✅ implementato e verificato in misura adeguata;
 - 🟡 implementato in parte oppure non ancora validato end-to-end/operativamente;
@@ -61,10 +61,10 @@ Risultato P0: **20 complete, 0 parziali, 0 mancanti**.
 | 32 | Email accettazione | 🟡 | Outbox, template e invio implementati; consegna Gmail non collaudata. |
 | 33 | Email rifiuto | 🟡 | Outbox, template e invio implementati; consegna Gmail non collaudata. |
 | 34 | Mailing list | ✅ | Gestione Admin e inclusione dei destinatari nelle email operative. |
-| 35 | Import storico | 🟡 | CSV/XLSX, dry-run, duplicati e timestamp coperti; resta da eseguire e riconciliare il file reale. |
+| 35 | Import storico | ✅ | CSV/XLSX, dry-run, duplicati e timestamp coperti; import reale completato dopo backup e riconciliato con 151 iscritti e 165 tutori. |
 | 36 | Test E2E completi | ✅ | Fixture deterministiche e database isolato coprono iscrizione pubblica, filtri/ordine, ciclo chiamate e matrice STAFF/ADMIN. |
 
-Risultato P1: **10 complete, 6 parziali, 0 mancanti**.
+Risultato P1: **11 complete, 5 parziali, 0 mancanti**.
 
 ## P2 — Miglioramenti
 
@@ -75,7 +75,7 @@ Risultato P1: **10 complete, 6 parziali, 0 mancanti**.
 | 39 | PWA | ❌ | Manifest, service worker e installabilità non presenti. |
 | 40 | Retry email da UI | ❌ | Outbox e stato errore esistono, ma manca l’azione di retry amministrativa. |
 | 41 | Cronologia chiamate | ❌ | Le partecipazioni annuali sono persistite, ma manca una cronologia operativa consultabile. |
-| 42 | Migliorie accessibilità | 🟡 | Semantica, touch target, reduced motion e Axe sulla home presenti; manca un audit completo di tutti i flussi e della navigazione da tastiera. |
+| 42 | Migliorie accessibilità | 🟡 | Semantica, touch target, reduced motion e Axe sul flusso pubblico presenti; manca un audit completo di tutti i flussi e della navigazione da tastiera. |
 | 43 | Migliorie performance | 🟡 | Paginazione, indici e query concorrenti presenti; mancano misurazioni, budget e test di carico. |
 | 44 | Configurazioni avanzate | ❌ | Non presenti oltre a branche e mailing list V1. |
 | 45 | Template email editabili | ❌ | Contratto dati presente, nessuna gestione template da UI/database. |
@@ -84,11 +84,10 @@ Risultato P2: **2 complete, 2 parziali, 5 mancanti**.
 
 ## Risultato complessivo
 
-Su 45 task: **32 complete, 8 parziali e 5 mancanti**. Inoltre, le 17 CR successive sono complete.
+Su 45 task: **33 complete, 7 parziali e 5 mancanti**. Inoltre, le 17 CR successive sono complete.
 
 Ordine consigliato per chiudere il backlog:
 
 1. collaudare sui flussi reali iscrizione, accettazione, rifiuto, invito Capo e reset password, inclusa la gestione dei bounce;
 2. aggiungere il retry amministrativo dell'outbox, rigenerando invece token e link per inviti e reset password;
-3. eseguire l'import reale con dry-run, backup e riconciliazione;
-4. proseguire con accessibilità/performance, cronologia chiamate, PWA, configurazioni e template.
+3. proseguire con accessibilità/performance, cronologia chiamate, PWA, configurazioni e template.
