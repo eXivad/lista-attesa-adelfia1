@@ -192,6 +192,7 @@ Tutte le variabili sono documentate in [.env.example](.env.example). I valori re
 |---|---|:---:|
 | `DATABASE_URL` | Connessione PostgreSQL usata dall’applicazione e da Prisma | Sì |
 | `DIRECT_URL` | Connessione diretta/session per migrazioni e backup; usa `DATABASE_URL` se vuota | Solo produzione serverless |
+| `DATABASE_CA_CERT` | Certificato CA PEM del provider per verificare la connessione TLS; accetta righe reali o `\n` | Produzione gestita |
 | `DATABASE_POOL_MAX` | Connessioni massime aperte da ogni istanza dell’app | No, default `10` |
 | `TEST_DATABASE_URL` | Database separato per test distruttivi | Solo E2E |
 | `BETTER_AUTH_URL` | URL pubblico dell’applicazione | Sì |
@@ -341,6 +342,8 @@ Il repository non è ancora legato a un provider specifico. La piattaforma scelt
 - rispetto di `Cache-Control`, `ETag` e query string per il logo versionato.
 
 Per un runtime serverless, `DATABASE_URL` deve usare il pooler transaction del provider e `DATABASE_POOL_MAX` deve iniziare da un valore prudenziale, normalmente `1`. `DIRECT_URL` deve invece usare una connessione diretta o un pooler session compatibile con migrazioni, `pg_dump` e `pg_restore`.
+
+Con Supabase abilita l'enforcement SSL, usa `sslmode=verify-full` nelle URL e valorizza `DATABASE_CA_CERT` con il certificato CA scaricato da **Project Settings > Database > SSL Configuration**. L'applicazione passa la CA direttamente a `node-postgres`, mantenendo attive sia la verifica della catena sia quella dell'hostname.
 
 Sequenza di rilascio consigliata:
 

@@ -1,7 +1,7 @@
 import "dotenv/config";
 
-import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../generated/prisma/client";
+import { createPrismaPgAdapter } from "../lib/database/prisma-pg-adapter";
 import { RetentionService } from "../modules/retention/retention.service";
 import { PrismaRetentionRepository } from "../repositories/prisma/retention.repository";
 
@@ -11,7 +11,12 @@ async function main() {
   if (!databaseUrl || !hmacSecret || hmacSecret.length < 32) throw new Error("DATABASE_URL e IDENTIFIER_HMAC_KEY devono essere configurate.");
   const retentionDays = Number(process.env.RETENTION_DAYS ?? "365");
   const apply = process.argv.includes("--apply");
-  const client = new PrismaClient({ adapter: new PrismaPg({ connectionString: databaseUrl }) });
+  const client = new PrismaClient({
+    adapter: createPrismaPgAdapter({
+      connectionString: databaseUrl,
+      caCertificate: process.env.DATABASE_CA_CERT,
+    }),
+  });
   try {
     const result = await new RetentionService({ repository: new PrismaRetentionRepository(client), hmacSecret }).run({ retentionDays, apply });
     const expiredRateBuckets = apply ? (await client.rateLimitBucket.deleteMany({ where: { expiresAt: { lt: new Date() } } })).count : 0;

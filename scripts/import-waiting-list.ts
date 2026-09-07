@@ -4,8 +4,8 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, extname, resolve } from "node:path";
 import { parse } from "csv-parse/sync";
 import { readSheet } from "read-excel-file/node";
-import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../generated/prisma/client";
+import { createPrismaPgAdapter } from "../lib/database/prisma-pg-adapter";
 
 import {
   prepareImportRows,
@@ -59,7 +59,12 @@ async function run(
 ) {
   const databaseUrl = process.env.DATABASE_URL;
   if (!databaseUrl) throw new Error("DATABASE_URL non configurata.");
-  const client = new PrismaClient({ adapter: new PrismaPg({ connectionString: databaseUrl }) });
+  const client = new PrismaClient({
+    adapter: createPrismaPgAdapter({
+      connectionString: databaseUrl,
+      caCertificate: process.env.DATABASE_CA_CERT,
+    }),
+  });
 
   try {
     const repository = new PrismaWaitingListImportRepository(client);
