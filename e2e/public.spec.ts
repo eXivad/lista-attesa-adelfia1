@@ -1,6 +1,12 @@
 import { expect, test, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
+import { resetFixtures } from "./helpers";
+
+test.beforeAll(async ({ request }) => {
+  await resetFixtures(request, "list");
+});
+
 test("la radice porta il visitatore anonimo direttamente all'iscrizione", async ({ page }) => {
   await page.goto("/");
   await expect(page).toHaveURL(/\/iscrizione$/);
@@ -10,12 +16,9 @@ test("la radice porta il visitatore anonimo direttamente all'iscrizione", async 
   expect(results.violations).toEqual([]);
 });
 
-test("pagina iscrizione espone form oppure blocco configurazione esplicito", async ({ page }) => {
+test("pagina iscrizione espone il form con privacy configurata", async ({ page }) => {
   await page.goto("/iscrizione");
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText(/^Iscrizion[ei]/);
-  const formStart = page.getByRole("heading", { name: "Dati del minore" });
-  const unavailable = page.getByRole("heading", { name: /temporaneamente non disponibili/i });
-  await expect(formStart.or(unavailable)).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Dati del minore" })).toBeVisible();
 });
 
 test("un visitatore anonimo non può accedere al backoffice", async ({ page }) => {

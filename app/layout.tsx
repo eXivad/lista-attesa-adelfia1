@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import type { ReactNode } from "react";
 import "@fontsource-variable/roboto/wght.css";
 import "@fontsource-variable/roboto-slab/wght.css";
 import "./globals.css";
@@ -12,7 +13,7 @@ export const metadata: Metadata = {
   description: "Iscrizione e gestione della lista d’attesa del Gruppo scout.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <html lang="it" className="h-full antialiased" suppressHydrationWarning>
       <head>
