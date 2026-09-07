@@ -26,6 +26,8 @@ describe("RegistrationWizard", () => {
     expect(html).toContain('for="minor.residenceProvince"');
     expect(html).toContain('for="minor.residencePostalCode"');
     expect(html).toContain('aria-current="step"');
+    expect(html).toContain('aria-label="Avanzamento iscrizione"');
+    expect(html).toContain('tabindex="0"');
     expect(html).toContain("Informativa privacy versione 2026.1");
   });
 });

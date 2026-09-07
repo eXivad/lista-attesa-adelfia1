@@ -174,7 +174,11 @@ export function RegistrationWizard({ privacyPolicy, groupName, submitAction }: R
         </p>
       </div>
 
-      <nav aria-label="Avanzamento iscrizione" className="overflow-x-auto pb-2">
+      <nav
+        aria-label="Avanzamento iscrizione"
+        className="overflow-x-auto rounded-lg pb-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-700"
+        tabIndex={0}
+      >
         <ol className="flex min-w-max items-center gap-2">
           {steps.map((label, index) => (
             <li key={label} className="flex items-center gap-2">

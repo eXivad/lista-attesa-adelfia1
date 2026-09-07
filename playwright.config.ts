@@ -3,6 +3,7 @@ import "dotenv/config";
 import { defineConfig, devices } from "@playwright/test";
 
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? process.env.BETTER_AUTH_URL ?? "http://127.0.0.1:3000";
+const healthCheckURL = new URL("/api/health", baseURL).toString();
 
 export default defineConfig({
   testDir: "./e2e",
@@ -21,7 +22,7 @@ export default defineConfig({
   ],
   webServer: {
     command: "node node_modules/next/dist/bin/next start",
-    url: baseURL,
+    url: healthCheckURL,
     reuseExistingServer: false,
     timeout: 120_000,
   },

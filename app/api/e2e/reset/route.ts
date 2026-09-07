@@ -1,9 +1,11 @@
 import { randomUUID, timingSafeEqual } from "node:crypto";
 
 import { hashPassword } from "better-auth/crypto";
+import { revalidateTag } from "next/cache";
 import { z } from "zod";
 
 import type { Prisma } from "@/generated/prisma/client";
+import { PRIVACY_POLICY_CACHE_TAG } from "@/lib/server/privacy-policy";
 import { getPrismaClient } from "@/lib/server/prisma";
 import { canResetE2EData } from "@/modules/e2e/reset-guard";
 
@@ -21,6 +23,7 @@ export async function POST(request: Request) {
   if (!parsed.success) return Response.json({ error: "Invalid scenario" }, { status: 400 });
 
   const result = await resetFixtures(parsed.data.scenario);
+  revalidateTag(PRIVACY_POLICY_CACHE_TAG, { expire: 0 });
   return Response.json(result, { headers: { "Cache-Control": "no-store" } });
 }
 
