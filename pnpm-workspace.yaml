@@ -1,0 +1,15 @@
+allowBuilds:
+  '@prisma/engines': true
+  esbuild: true
+  fsevents: true
+  prisma: true
+  unrs-resolver: true
+
+# Versione gia presente nel lockfile npm precedente e verificata tramite
+# integrita SHA-512. Mantiene il controllo di 24 ore per tutti gli altri pacchetti.
+minimumReleaseAgeExclude:
+  - '@types/react-dom@19.2.7'
+
+overrides:
+  deepmerge-ts: 8.0.2
+  mysql2: 3.24.3

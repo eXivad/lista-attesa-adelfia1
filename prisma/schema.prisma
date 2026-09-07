@@ -1,0 +1,363 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  ADMIN
+  STAFF
+}
+
+enum ApplicantGender {
+  M
+  F
+}
+
+enum GuardianType {
+  A
+  B
+}
+
+enum ApplicantStatus {
+  IN_ATTESA
+  DA_CHIAMARE
+  ACCETTATO
+  RIFIUTATO
+}
+
+enum Branch {
+  LC
+  EG
+  RS
+}
+
+enum AssociativeYearStatus {
+  CREATED
+  ACTIVE_CALLS_CLOSED
+  CALLS_OPEN
+  CLOSED
+}
+
+enum MailType {
+  REGISTRATION_CONFIRMATION
+  ACCEPTANCE_CONFIRMATION
+  REJECTION_CONFIRMATION
+  STAFF_INVITATION
+  PASSWORD_RESET
+}
+
+enum MailDeliveryStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+model User {
+  id            String    @id @db.VarChar(36)
+  name          String
+  firstName     String
+  lastName      String
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  image         String?
+  memberCode    String    @unique
+  role          UserRole  @default(STAFF)
+  banned        Boolean   @default(false)
+  banReason     String?
+  banExpires    DateTime? @db.Timestamptz(3)
+  createdAt     DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime  @updatedAt @db.Timestamptz(3)
+
+  sessions           Session[]
+  accounts           Account[]
+  createdInvitations StaffInvitation[] @relation("InvitationCreator")
+}
+
+model Session {
+  id             String   @id @db.VarChar(36)
+  expiresAt      DateTime @db.Timestamptz(3)
+  token          String   @unique
+  createdAt      DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime @updatedAt @db.Timestamptz(3)
+  ipAddress      String?
+  userAgent      String?
+  userId         String   @db.VarChar(36)
+  impersonatedBy String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Account {
+  id                    String    @id @db.VarChar(36)
+  issuer                String
+  accountId             String
+  providerId            String
+  userId                String    @db.VarChar(36)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime? @db.Timestamptz(3)
+  refreshTokenExpiresAt DateTime? @db.Timestamptz(3)
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt             DateTime  @updatedAt @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([issuer, accountId])
+  @@index([userId])
+}
+
+model Verification {
+  id         String   @id @db.VarChar(36)
+  identifier String
+  value      String
+  expiresAt  DateTime @db.Timestamptz(3)
+  createdAt  DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime @updatedAt @db.Timestamptz(3)
+
+  @@index([identifier])
+}
+
+model StaffInvitation {
+  id                String    @id @db.VarChar(26)
+  firstName         String
+  lastName          String
+  email             String
+  memberCode        String
+  role              UserRole
+  tokenHash         String    @unique
+  expiresAt         DateTime  @db.Timestamptz(3)
+  acceptedAt        DateTime? @db.Timestamptz(3)
+  createdAt         DateTime  @default(now()) @db.Timestamptz(3)
+  createdById       String?   @db.VarChar(36)
+  pendingEmail      String?   @unique
+  pendingMemberCode String?   @unique
+
+  createdBy User? @relation("InvitationCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([email])
+}
+
+model WaitingListEntry {
+  id                   String          @id @db.VarChar(26)
+  registrationNumber   String          @unique @db.VarChar(20)
+  firstName            String
+  lastName             String
+  gender               ApplicantGender
+  birthDate            DateTime        @db.Date
+  birthYear            Int
+  birthPlace           String?
+  birthProvince        String?         @db.Char(2)
+  fiscalCode           String?         @unique @db.Char(16)
+  residenceAddress     String?
+  residenceCity        String?
+  residenceProvince    String?         @db.Char(2)
+  residencePostalCode  String?         @db.VarChar(12)
+  notes                String          @default("") @db.Text
+  status               ApplicantStatus @default(IN_ATTESA)
+  terminalStatusAt     DateTime?       @db.Timestamptz(3)
+  privacyAccepted      Boolean
+  privacyAcceptedAt    DateTime?       @db.Timestamptz(3)
+  privacyPolicyVersion String?
+  createdAt            DateTime        @default(now()) @db.Timestamptz(3)
+  updatedAt            DateTime        @updatedAt @db.Timestamptz(3)
+
+  privacyPolicy  PrivacyPolicyVersion? @relation(fields: [privacyPolicyVersion], references: [version], onUpdate: Cascade, onDelete: Restrict)
+  guardians      Guardian[]
+  participations CallParticipation[]
+  mailOutbox     MailOutbox[]
+
+  @@index([createdAt, id])
+  @@index([status, createdAt, id])
+  @@index([birthYear, createdAt, id])
+  @@index([gender, createdAt, id])
+  @@index([firstName, lastName])
+}
+
+model Guardian {
+  id            String       @id @db.VarChar(26)
+  applicantId   String       @db.VarChar(26)
+  type          GuardianType
+  firstName     String?
+  lastName      String?
+  birthDate     DateTime?    @db.Date
+  birthPlace    String?
+  birthProvince String?      @db.Char(2)
+  fiscalCode    String?      @db.Char(16)
+  address       String?
+  city          String?
+  province      String?      @db.Char(2)
+  postalCode    String?      @db.VarChar(12)
+  email         String?
+  phone         String?
+  createdAt     DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime     @updatedAt @db.Timestamptz(3)
+
+  applicant WaitingListEntry @relation(fields: [applicantId], references: [id], onDelete: Cascade)
+
+  @@unique([applicantId, type])
+  @@index([email])
+  @@index([phone])
+  @@index([firstName, lastName])
+}
+
+model AssociativeYear {
+  id            String                @id @db.VarChar(26)
+  label         String                @unique @db.VarChar(9)
+  startYear     Int                   @unique
+  endYear       Int
+  status        AssociativeYearStatus @default(CREATED)
+  currentKey    Int?                  @unique
+  callsOpenedAt DateTime?             @db.Timestamptz(3)
+  callsClosedAt DateTime?             @db.Timestamptz(3)
+  createdAt     DateTime              @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime              @updatedAt @db.Timestamptz(3)
+
+  participations CallParticipation[]
+  statistics     AnnualStatistics[]
+}
+
+model CallParticipation {
+  id                String          @id @db.VarChar(26)
+  associativeYearId String          @db.VarChar(26)
+  applicantId       String?         @db.VarChar(26)
+  branch            Branch
+  gender            ApplicantGender
+  birthYear         Int
+  outcome           ApplicantStatus @default(DA_CHIAMARE)
+  createdAt         DateTime        @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime        @updatedAt @db.Timestamptz(3)
+
+  associativeYear AssociativeYear   @relation(fields: [associativeYearId], references: [id], onDelete: Restrict)
+  applicant       WaitingListEntry? @relation(fields: [applicantId], references: [id], onDelete: SetNull)
+
+  @@unique([associativeYearId, applicantId])
+  @@index([associativeYearId, outcome])
+}
+
+model AnnualStatistics {
+  id                String          @id @db.VarChar(26)
+  associativeYearId String          @db.VarChar(26)
+  branch            Branch
+  gender            ApplicantGender
+  birthYear         Int
+  totalCandidates   Int
+  accepted          Int
+  refused           Int
+  remaining         Int
+  createdAt         DateTime        @default(now()) @db.Timestamptz(3)
+
+  associativeYear AssociativeYear @relation(fields: [associativeYearId], references: [id], onDelete: Restrict)
+
+  @@unique([associativeYearId, branch, gender, birthYear])
+  @@index([associativeYearId])
+}
+
+model PrivacyPolicyVersion {
+  id          String   @id @db.VarChar(26)
+  version     String   @unique
+  fileUrl     String
+  publishedAt DateTime @db.Timestamptz(3)
+  isActive    Boolean  @default(false)
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(3)
+
+  applicants WaitingListEntry[]
+
+  @@index([isActive])
+}
+
+model BlockedIdentifier {
+  id             String   @id @db.VarChar(26)
+  identifierHash String   @unique @db.Char(64)
+  reason         String
+  createdAt      DateTime @default(now()) @db.Timestamptz(3)
+}
+
+model BranchConfiguration {
+  branch    Branch   @id
+  minAge    Int
+  maxAge    Int
+  entryAge  Int
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+}
+
+model GroupSettings {
+  id          String   @id @db.VarChar(26)
+  groupName   String   @db.VarChar(120)
+  logoAssetId String?  @unique @db.VarChar(26)
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(3)
+
+  logoAsset GroupLogoAsset? @relation(fields: [logoAssetId], references: [id], onDelete: SetNull)
+}
+
+model GroupLogoAsset {
+  id        String   @id @db.VarChar(26)
+  mimeType  String   @db.VarChar(32)
+  byteSize  Int
+  content   Bytes    @db.ByteA
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  settings GroupSettings?
+}
+
+model RegistrationCounter {
+  year      Int      @id
+  lastValue Int      @default(0)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+}
+
+model MailingRecipient {
+  id        String   @id @db.VarChar(26)
+  email     String   @unique
+  label     String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+}
+
+model MailOutbox {
+  id           String             @id @db.VarChar(26)
+  applicantId  String?            @db.VarChar(26)
+  type         MailType
+  recipients   String[]
+  payload      Json
+  status       MailDeliveryStatus @default(PENDING)
+  attemptCount Int                @default(0)
+  lastError    String?
+  sentAt       DateTime?          @db.Timestamptz(3)
+  createdAt    DateTime           @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime           @updatedAt @db.Timestamptz(3)
+
+  applicant WaitingListEntry? @relation(fields: [applicantId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+}
+
+model MailQuotaReservation {
+  id             String   @id @db.VarChar(26)
+  senderKey      String   @db.Char(64)
+  recipientCount Int
+  createdAt      DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([senderKey, createdAt])
+}
+
+model RateLimitBucket {
+  keyHash     String   @id @db.Char(64)
+  windowStart DateTime @db.Timestamptz(3)
+  attempts    Int      @default(0)
+  expiresAt   DateTime @db.Timestamptz(3)
+
+  @@index([expiresAt])
+}
