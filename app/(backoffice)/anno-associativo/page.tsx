@@ -120,7 +120,7 @@ export default async function AssociativeYearPage({
               </div>
             ) : (
               <p className="text-stone-600">
-                Nessun A.A. configurato.
+                Nessun Anno Associativo configurato.
               </p>
             )}
           </CardContent>

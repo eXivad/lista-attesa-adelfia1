@@ -43,3 +43,11 @@ Aggiornamento del 6 settembre 2026 dopo il supporto agli archivi storici e la se
 - Validazione Prisma, ESLint, TypeScript e build di produzione superati; l'audit pnpm non rileva vulnerabilità note.
 - Import reale eseguito dopo backup e dry-run, quindi riconciliato in forma aggregata: 151 iscritti e 165 tutori.
 - Gli E2E non sono stati rieseguiti sul database locale contenente i dati reali, per evitare l'uso dell'endpoint distruttivo di reset; resta valida la precedente evidenza sul database isolato.
+
+Aggiornamento dell'8 settembre 2026 dopo la revisione completa della suite:
+
+- 47 file di test e 171 test unitari/integrativi superati.
+- Coverage: 93,64% statement, 85,96% branch, 94,44% funzioni e 95,59% linee.
+- 14 E2E superati su Chromium mobile e desktop; 2 scenari mutanti saltati intenzionalmente su mobile ed eseguiti con successo su desktop.
+- Il server avviato da Playwright disabilita esplicitamente Gmail OAuth e il reset E2E elimina anche le prenotazioni della quota email, evitando invii o residui tra scenari.
+- Build di produzione, ESLint e TypeScript superati.

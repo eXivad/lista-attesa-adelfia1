@@ -66,6 +66,7 @@ async function resetFixtures(scenario: "list" | "calls") {
     await transaction.blockedIdentifier.deleteMany();
     await transaction.registrationCounter.deleteMany();
     await transaction.rateLimitBucket.deleteMany();
+    await transaction.mailQuotaReservation.deleteMany();
 
     if (staff && staffPasswordHash) {
       await transaction.user.deleteMany({

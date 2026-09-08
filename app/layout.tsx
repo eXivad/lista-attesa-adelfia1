@@ -5,13 +5,17 @@ import "@fontsource-variable/roboto-slab/wght.css";
 import "./globals.css";
 import Script from "next/script";
 
-export const metadata: Metadata = {
-  title: {
-    default: "Lista d’attesa",
-    template: "%s | Lista d’attesa",
-  },
-  description: "Iscrizione e gestione della lista d’attesa del Gruppo scout.",
-};
+import { buildRootMetadata } from "@/lib/root-metadata";
+import { getGroupBrandingSettings } from "@/lib/server/group-branding";
+
+export async function generateMetadata(): Promise<Metadata> {
+  try {
+    const { groupName } = await getGroupBrandingSettings();
+    return buildRootMetadata(groupName);
+  } catch {
+    return buildRootMetadata();
+  }
+}
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (

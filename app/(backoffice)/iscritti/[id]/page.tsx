@@ -210,8 +210,7 @@ export default async function ApplicantDetailPage({
             Zona pericolosa
           </h2>
           <p className="text-sm text-stone-600">
-            La cancellazione è definitiva e rimane separata dalle azioni
-            operative.
+            Elimina definitivamente questo iscritto dalla lista d’attesa. Tutti i dati associati verranno rimossi e non potranno essere recuperati.
           </p>
         </CardHeader>
         <CardContent>
