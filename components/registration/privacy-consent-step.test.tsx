@@ -16,6 +16,6 @@ describe("PrivacyConsentStep", () => {
     const consentPosition = html.indexOf('name="privacyAccepted"');
     expect(documentPosition).toBeGreaterThan(-1);
     expect(consentPosition).toBeGreaterThan(documentPosition);
-    expect(html).toContain("Ho letto e accetto l’informativa privacy versione 2026.2");
+    expect(html).toContain("Dichiaro di aver letto e compreso l’informativa privacy (versione 2026.2)");
   });
 });

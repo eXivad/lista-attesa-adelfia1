@@ -72,11 +72,10 @@ export type RegisterApplicantActionResult =
 
 interface RegistrationWizardProps {
   privacyPolicy: { version: string; fileUrl: string };
-  groupName: string;
   submitAction: (input: ApplicantRegistrationInput) => Promise<RegisterApplicantActionResult>;
 }
 
-export function RegistrationWizard({ privacyPolicy, groupName, submitAction }: RegistrationWizardProps) {
+export function RegistrationWizard({ privacyPolicy, submitAction }: RegistrationWizardProps) {
   const [step, setStep] = useState(0);
   const [pending, setPending] = useState(false);
   const [result, setResult] = useState<RegisterApplicantActionResult>({ status: "idle" });
@@ -162,15 +161,14 @@ export function RegistrationWizard({ privacyPolicy, groupName, submitAction }: R
   return (
     <div className="space-y-5">
       <div>
-        <p className="text-sm font-bold uppercase tracking-[0.16em] text-violet-700">{groupName}</p>
         <h1 className="font-slab mt-2 text-3xl font-bold text-violet-950 sm:text-4xl">
-          Iscrizione alla lista d’attesa
+          Modulo di Pre-Iscrizione al Gruppo
         </h1>
         <p className="mt-3 max-w-2xl text-stone-600">
-          Compila tutti i passaggi. I dati non saranno inviati finché non confermerai il riepilogo.
+          Completa tutti i passaggi. Potrai verificare le informazioni inserite prima dell’invio definitivo.
         </p>
         <p className="mt-3 text-sm font-medium text-violet-800">
-          Informativa privacy versione {privacyPolicy.version}: sarà mostrata per intero nel passaggio Privacy.
+          Nel passaggio dedicato potrai leggere l’informativa privacy completa, versione {privacyPolicy.version}, prima di confermare la richiesta.
         </p>
       </div>
 

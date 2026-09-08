@@ -12,8 +12,7 @@ export function PrivacyConsentStep({ policy, error, registration }: PrivacyConse
   return (
     <div className="space-y-5">
       <div className="rounded-2xl bg-violet-50 p-5 text-sm leading-6 text-violet-950">
-        Leggi l’informativa direttamente qui sotto. Dopo il documento potrai confermare di averla
-        letta e proseguire con l’iscrizione.
+        Leggi attentamente l’informativa qui sotto. Dopo aver letto dichiara la presa visione e procedi con il modulo.
       </div>
       <PrivacyDocumentViewer fileUrl={policy.fileUrl} version={policy.version} />
       <div>
@@ -26,7 +25,7 @@ export function PrivacyConsentStep({ policy, error, registration }: PrivacyConse
             {...registration}
           />
           <span className="text-sm leading-6 text-stone-800">
-            Ho letto e accetto l’informativa privacy versione {policy.version}.
+            {`Dichiaro di aver letto e compreso l’informativa privacy (versione ${policy.version}) e di essere legittimato/a a fornire i dati degli altri soggetti indicati nel modulo, rendendo loro disponibile la stessa informativa.`}
           </span>
         </label>
         {error && (

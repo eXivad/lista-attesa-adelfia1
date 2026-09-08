@@ -8,12 +8,11 @@ describe("RegistrationWizard", () => {
     const html = renderToStaticMarkup(
       <RegistrationWizard
         privacyPolicy={{ version: "2026.1", fileUrl: "/privacy" }}
-        groupName="Gruppo Scout"
         submitAction={async () => ({ status: "idle" })}
       />,
     );
 
-    expect(html).toContain("Iscrizione alla lista d’attesa");
+    expect(html).toContain("Modulo di Pre-Iscrizione al Gruppo");
     expect(html).toContain("Dati del minore");
     expect(html).toContain("Genitore A");
     expect(html).toContain("Genitore B");
@@ -28,6 +27,6 @@ describe("RegistrationWizard", () => {
     expect(html).toContain('aria-current="step"');
     expect(html).toContain('aria-label="Avanzamento iscrizione"');
     expect(html).toContain('tabindex="0"');
-    expect(html).toContain("Informativa privacy versione 2026.1");
+    expect(html).toContain("informativa privacy completa, versione 2026.1");
   });
 });

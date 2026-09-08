@@ -10,7 +10,7 @@ test.beforeAll(async ({ request }) => {
 test("la radice porta il visitatore anonimo direttamente all'iscrizione", async ({ page }) => {
   await page.goto("/");
   await expect(page).toHaveURL(/\/iscrizione$/);
-  await expect(page.locator("header").getByText("Iscrizione alla lista d’attesa", { exact: true })).toBeVisible();
+  await expect(page.locator("header").getByText("Istanza di Pre-Iscrizione al Gruppo", { exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: /torna alla home/i })).toHaveCount(0);
   const results = await new AxeBuilder({ page }).analyze();
   expect(results.violations).toEqual([]);
@@ -63,7 +63,7 @@ test("completa l'iscrizione pubblica in sei passi", async ({ page }) => {
   });
   await page.getByRole("button", { name: "Continua" }).click();
 
-  await page.getByRole("checkbox", { name: /Ho letto e accetto/ }).check();
+  await page.getByRole("checkbox", { name: /Dichiaro di aver letto e compreso/ }).check();
   await page.getByRole("button", { name: "Continua" }).click();
   await expect(page.getByRole("heading", { name: "Riepilogo" })).toBeVisible();
   const submitButton = page.getByRole("button", { name: "Conferma iscrizione" });

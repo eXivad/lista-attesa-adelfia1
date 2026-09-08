@@ -22,11 +22,11 @@ export default async function RegistrationPage() {
           <GroupBrand
             groupName={branding.groupName}
             logoUrl={logoUrl}
-            subtitle="Iscrizione alla lista d’attesa"
+            subtitle="Istanza di Pre-Iscrizione al Gruppo"
           />
         </header>
         {privacyPolicy ? (
-          <RegistrationWizard privacyPolicy={privacyPolicy} groupName={branding.groupName} submitAction={registerApplicantAction} />
+          <RegistrationWizard privacyPolicy={privacyPolicy} submitAction={registerApplicantAction} />
         ) : (
           <Card>
             <CardContent className="flex gap-4 p-7">
