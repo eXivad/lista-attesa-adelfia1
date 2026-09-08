@@ -57,7 +57,7 @@ export async function completePublicRegistration(page: Page, input: { birthYear:
   await fillGuardian(page, "Luigi", "Rossi", "RSSLGU83M22A662Y", "luigi.e2e@example.test");
   await page.getByRole("button", { name: "Continua" }).click();
 
-  await page.getByRole("checkbox", { name: /Ho letto e accetto/ }).check();
+  await page.getByRole("checkbox", { name: /informativa privacy/i }).check();
   await page.getByRole("button", { name: "Continua" }).click();
   await page.getByRole("button", { name: "Conferma iscrizione" }).click();
   await expect(page.getByText("Iscrizione completata")).toBeVisible();

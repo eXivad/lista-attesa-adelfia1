@@ -63,7 +63,7 @@ test("completa l'iscrizione pubblica in sei passi", async ({ page }) => {
   });
   await page.getByRole("button", { name: "Continua" }).click();
 
-  await page.getByRole("checkbox", { name: /Dichiaro di aver letto e compreso/ }).check();
+  await page.getByRole("checkbox", { name: /informativa privacy/i }).check();
   await page.getByRole("button", { name: "Continua" }).click();
   await expect(page.getByRole("heading", { name: "Riepilogo" })).toBeVisible();
   const submitButton = page.getByRole("button", { name: "Conferma iscrizione" });
