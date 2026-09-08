@@ -4,6 +4,8 @@ import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import { formatRegistrationNumber, getRegistrationYear } from "@/modules/applicants/domain/registration-number";
 import { importIdentityKeys, type PreparedImportRow } from "@/modules/import/waiting-list-import";
 
+const IMPORT_TRANSACTION_TIMEOUT_MS = 120_000;
+
 export class PrismaWaitingListImportRepository {
   private readonly createId: (timestamp?: number) => string;
 
@@ -26,56 +28,75 @@ export class PrismaWaitingListImportRepository {
   }
 
   async importRows(rows: PreparedImportRow[]) {
-    return this.client.$transaction(async (transaction) => {
-      const imported: Array<{ row: number; id: string; registrationNumber: string }> = [];
+    if (rows.length === 0) return [];
 
-      for (const row of rows) {
-        const duplicateConditions: Prisma.WaitingListEntryWhereInput[] = [{
+    return this.client.$transaction(async (transaction) => {
+      const duplicateConditions: Prisma.WaitingListEntryWhereInput[] = rows.flatMap((row) => {
+        const conditions: Prisma.WaitingListEntryWhereInput[] = [{
           firstName: { equals: row.minor.firstName, mode: "insensitive" },
           lastName: { equals: row.minor.lastName, mode: "insensitive" },
           birthDate: row.minor.birthDate,
         }];
-        if (row.minor.fiscalCode) duplicateConditions.push({ fiscalCode: row.minor.fiscalCode });
+        if (row.minor.fiscalCode) conditions.push({ fiscalCode: row.minor.fiscalCode });
+        return conditions;
+      });
+      const existingRows = await transaction.waitingListEntry.findMany({
+        where: { OR: duplicateConditions },
+        select: { firstName: true, lastName: true, birthDate: true, fiscalCode: true },
+      });
+      const existingKeys = new Set(existingRows.flatMap(importIdentityKeys));
+      const conflictingRow = rows.find((row) =>
+        importIdentityKeys(row.minor).some((key) => existingKeys.has(key))
+      );
+      if (conflictingRow) throw new WaitingListImportConflictError(conflictingRow.sourceRow);
 
-        const existing = await transaction.waitingListEntry.findFirst({
-          where: { OR: duplicateConditions },
-          select: { id: true },
-        });
-        if (existing) throw new WaitingListImportConflictError(row.sourceRow);
-
-        const registrationYear = getRegistrationYear(row.createdAt);
+      const rowsByYear = Map.groupBy(rows, (row) => getRegistrationYear(row.createdAt));
+      const nextSequenceByYear = new Map<number, number>();
+      for (const [registrationYear, yearRows] of rowsByYear) {
         const counter = await transaction.registrationCounter.upsert({
           where: { year: registrationYear },
-          create: { year: registrationYear, lastValue: 1 },
-          update: { lastValue: { increment: 1 } },
+          create: { year: registrationYear, lastValue: yearRows.length },
+          update: { lastValue: { increment: yearRows.length } },
           select: { lastValue: true },
         });
+        nextSequenceByYear.set(registrationYear, counter.lastValue - yearRows.length + 1);
+      }
+
+      const imported: Array<{ row: number; id: string; registrationNumber: string }> = [];
+      const entries: Prisma.WaitingListEntryCreateManyInput[] = [];
+      const guardians: Prisma.GuardianCreateManyInput[] = [];
+      for (const row of rows) {
+        const registrationYear = getRegistrationYear(row.createdAt);
+        const sequence = nextSequenceByYear.get(registrationYear);
+        if (sequence === undefined) throw new Error(`Progressivo ${registrationYear} non allocato.`);
+
         const id = this.createId(row.createdAt.getTime());
-        const registrationNumber = formatRegistrationNumber(registrationYear, counter.lastValue);
-        await transaction.waitingListEntry.create({
-          data: {
-            id,
-            registrationNumber,
-            ...row.minor,
-            status: "IN_ATTESA",
-            privacyAccepted: row.privacyAccepted,
-            privacyAcceptedAt: row.privacyAcceptedAt,
-            privacyPolicyVersion: row.privacyPolicyVersion,
-            createdAt: row.createdAt,
-            guardians: {
-              create: row.guardians.map((guardian) => ({
-                id: this.createId(row.createdAt.getTime()),
-                ...guardian,
-                createdAt: row.createdAt,
-              })),
-            },
-          },
+        const registrationNumber = formatRegistrationNumber(registrationYear, sequence);
+        nextSequenceByYear.set(registrationYear, sequence + 1);
+        entries.push({
+          id,
+          registrationNumber,
+          ...row.minor,
+          status: "IN_ATTESA",
+          privacyAccepted: row.privacyAccepted,
+          privacyAcceptedAt: row.privacyAcceptedAt,
+          privacyPolicyVersion: row.privacyPolicyVersion,
+          createdAt: row.createdAt,
         });
+        guardians.push(...row.guardians.map((guardian) => ({
+          id: this.createId(row.createdAt.getTime()),
+          applicantId: id,
+          ...guardian,
+          createdAt: row.createdAt,
+        })));
         imported.push({ row: row.sourceRow, id, registrationNumber });
       }
 
+      await transaction.waitingListEntry.createMany({ data: entries });
+      if (guardians.length > 0) await transaction.guardian.createMany({ data: guardians });
+
       return imported;
-    }, { timeout: 30_000 });
+    }, { timeout: IMPORT_TRANSACTION_TIMEOUT_MS });
   }
 }
 

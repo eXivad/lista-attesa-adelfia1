@@ -49,8 +49,22 @@ const legacyRow: PreparedImportRow = {
 function createClient() {
   const transaction = {
     waitingListEntry: {
-      findFirst: vi.fn(async () => null as { id: string } | null),
-      create: vi.fn(async () => ({})),
+      findMany: vi.fn(async () => [] as Array<{
+        firstName: string;
+        lastName: string;
+        birthDate: Date;
+        fiscalCode: string | null;
+      }>),
+      createMany: vi.fn(async (arguments_: { data: unknown[] }) => {
+        void arguments_;
+        return { count: 1 };
+      }),
+    },
+    guardian: {
+      createMany: vi.fn(async (arguments_: { data: unknown[] }) => {
+        void arguments_;
+        return { count: 1 };
+      }),
     },
     registrationCounter: {
       upsert: vi.fn(async () => ({ lastValue: 7 })),
@@ -78,24 +92,31 @@ describe("PrismaWaitingListImportRepository", () => {
       registrationNumber: "LA-2024-000007",
     }]);
     expect(client.$transaction).toHaveBeenCalledOnce();
-    expect(transaction.waitingListEntry.create).toHaveBeenCalledWith({
-      data: expect.objectContaining({
+    expect(transaction.waitingListEntry.createMany).toHaveBeenCalledWith({
+      data: [expect.objectContaining({
         fiscalCode: null,
         privacyAccepted: false,
         privacyAcceptedAt: null,
         privacyPolicyVersion: null,
-        guardians: {
-          create: [expect.objectContaining({ id: "guardian-id", email: null })],
-        },
-      }),
+      })],
+    });
+    expect(transaction.guardian.createMany).toHaveBeenCalledWith({
+      data: [expect.objectContaining({
+        id: "guardian-id",
+        applicantId: "entry-id",
+        email: null,
+      })],
     });
   });
 
   it("interrompe il lotto se un record compare nel database durante l'importazione", async () => {
     const { client, transaction } = createClient();
-    transaction.waitingListEntry.findFirst
-      .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce({ id: "already-there" });
+    transaction.waitingListEntry.findMany.mockResolvedValueOnce([{
+      firstName: "Luca",
+      lastName: "Rossi",
+      birthDate: legacyRow.minor.birthDate,
+      fiscalCode: null,
+    }]);
     const repository = new PrismaWaitingListImportRepository(client as never, {
       createId: () => "generated-id",
     });
@@ -106,6 +127,55 @@ describe("PrismaWaitingListImportRepository", () => {
     ])).rejects.toEqual(expect.objectContaining<Partial<WaitingListImportConflictError>>({
       sourceRow: 3,
     }));
-    expect(client.$transaction).toHaveBeenCalledWith(expect.any(Function), { timeout: 30_000 });
+    expect(transaction.registrationCounter.upsert).not.toHaveBeenCalled();
+    expect(transaction.waitingListEntry.createMany).not.toHaveBeenCalled();
+    expect(client.$transaction).toHaveBeenCalledWith(expect.any(Function), { timeout: 120_000 });
+  });
+
+  it("alloca i progressivi per anno e inserisce il lotto con due sole scritture bulk", async () => {
+    const { client, transaction } = createClient();
+    transaction.registrationCounter.upsert
+      .mockResolvedValueOnce({ lastValue: 11 })
+      .mockResolvedValueOnce({ lastValue: 4 });
+    const ids = ["entry-1", "guardian-1", "entry-2", "guardian-2", "entry-3", "guardian-3"];
+    const repository = new PrismaWaitingListImportRepository(client as never, {
+      createId: () => ids.shift()!,
+    });
+    const rows = [
+      legacyRow,
+      {
+        ...legacyRow,
+        sourceRow: 3,
+        minor: { ...legacyRow.minor, firstName: "Luca" },
+      },
+      {
+        ...legacyRow,
+        sourceRow: 4,
+        createdAt: new Date("2025-01-02T08:30:00.000Z"),
+        minor: { ...legacyRow.minor, firstName: "Anna" },
+      },
+    ];
+
+    await expect(repository.importRows(rows)).resolves.toEqual([
+      { row: 2, id: "entry-1", registrationNumber: "LA-2024-000010" },
+      { row: 3, id: "entry-2", registrationNumber: "LA-2024-000011" },
+      { row: 4, id: "entry-3", registrationNumber: "LA-2025-000004" },
+    ]);
+    expect(transaction.registrationCounter.upsert).toHaveBeenNthCalledWith(1, {
+      where: { year: 2024 },
+      create: { year: 2024, lastValue: 2 },
+      update: { lastValue: { increment: 2 } },
+      select: { lastValue: true },
+    });
+    expect(transaction.registrationCounter.upsert).toHaveBeenNthCalledWith(2, {
+      where: { year: 2025 },
+      create: { year: 2025, lastValue: 1 },
+      update: { lastValue: { increment: 1 } },
+      select: { lastValue: true },
+    });
+    expect(transaction.waitingListEntry.createMany).toHaveBeenCalledOnce();
+    expect(transaction.waitingListEntry.createMany.mock.calls[0]?.[0].data).toHaveLength(3);
+    expect(transaction.guardian.createMany).toHaveBeenCalledOnce();
+    expect(transaction.guardian.createMany.mock.calls[0]?.[0].data).toHaveLength(3);
   });
 });
