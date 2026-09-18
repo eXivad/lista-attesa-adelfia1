@@ -53,6 +53,7 @@ function setup(overrides: Partial<GmailSmtpMailProviderOptions> = {}) {
     clock: () => NOW,
     logger,
     createOperationId: () => "mail-operation-test",
+    logoOptimizer: vi.fn(async (logo: { content: Uint8Array; mimeType: string }) => logo),
     ...overrides,
   };
   const provider = new GmailSmtpMailProvider(providerOptions);
@@ -60,7 +61,7 @@ function setup(overrides: Partial<GmailSmtpMailProviderOptions> = {}) {
 }
 
 describe("GmailSmtpMailProvider", () => {
-  it("invia un messaggio distinto per destinatario con To visibile e priorit\u00e0 alta", async () => {
+  it("invia un messaggio distinto per destinatario con To visibile e priorit\u00e0 neutra", async () => {
     const { provider, quotaGuard, transport, logger } = setup();
 
     await provider.sendRegistrationConfirmation({
@@ -83,10 +84,10 @@ describe("GmailSmtpMailProvider", () => {
       "luigi@example.it",
     ]);
     expect(messages.every((message) => message.bcc === undefined)).toBe(true);
+    expect(messages.every((message) => message.priority === undefined)).toBe(true);
     expect(messages[0]).toEqual(expect.objectContaining({
       from: { name: "AGESCI Adelfia 1", address: "gruppo@gmail.com" },
       replyTo: "gruppo@gmail.com",
-      priority: "high",
       subject: "Conferma iscrizione lista d'attesa - LA-2026-000123",
       text: expect.stringContaining("Mario Rossi"),
       html: expect.stringContaining("Richiesta ricevuta"),
@@ -101,6 +102,10 @@ describe("GmailSmtpMailProvider", () => {
       disableFileAccess: true,
       disableUrlAccess: true,
     }));
+    expect(logger.info).toHaveBeenCalledWith(
+      "Invio email avviato.",
+      expect.objectContaining({ priority: "normal" }),
+    );
     expect(logger.info).toHaveBeenCalledWith(
       "Invio email completato con successo.",
       expect.objectContaining({
@@ -123,6 +128,66 @@ describe("GmailSmtpMailProvider", () => {
     expect(serializedLogs).toContain("a***@example.it");
     expect(serializedLogs).not.toContain("anna@example.it");
     expect(serializedLogs).not.toContain("luigi@example.it");
+  });
+
+  it("ottimizza il logo prima di incorporarlo nel messaggio", async () => {
+    const original = new Uint8Array(150_000).fill(1);
+    const optimized = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 1]);
+    const logoOptimizer = vi.fn(async () => ({
+      content: optimized,
+      mimeType: "image/png" as const,
+    }));
+    const options = {
+      brandingLoader: vi.fn(async () => ({
+        organizationName: "AGESCI Adelfia 1",
+        logo: { content: original, mimeType: "image/png" },
+      })),
+      logoOptimizer,
+    };
+    const { provider, transport, logger } = setup(options);
+
+    await provider.sendDiagnosticMessage("anna@example.it");
+
+    expect(logoOptimizer).toHaveBeenCalledWith({
+      content: original,
+      mimeType: "image/png",
+    });
+    const message = vi.mocked(transport.sendMail).mock.calls[0][0];
+    expect(message.attachments).toEqual([expect.objectContaining({
+      content: Buffer.from(optimized),
+      contentType: "image/png",
+      contentDisposition: "inline",
+    })]);
+    expect(logger.info).toHaveBeenCalledWith(
+      "Logo email ottimizzato.",
+      expect.objectContaining({
+        event: "mail.branding.logo.optimized",
+        originalByteSize: 150_000,
+        optimizedByteSize: optimized.byteLength,
+      }),
+    );
+  });
+
+  it("invia senza logo se l'ottimizzazione dell'immagine fallisce", async () => {
+    const logoOptimizer = vi.fn(async () => {
+      throw new Error("decoder image failed with private path");
+    });
+    const options = { logoOptimizer };
+    const { provider, transport, logger } = setup(options);
+
+    await provider.sendDiagnosticMessage("anna@example.it");
+
+    const message = vi.mocked(transport.sendMail).mock.calls[0][0];
+    expect(message.attachments).toBeUndefined();
+    expect(message.html).not.toContain("cid:logo-lista-attesa@agesci");
+    expect(logger.warn).toHaveBeenCalledWith(
+      "Logo email non ottimizzabile: invio senza immagine.",
+      expect.objectContaining({
+        event: "mail.branding.logo.omitted",
+        reasonCode: "LOGO_OPTIMIZATION_FAILED",
+      }),
+    );
+    expect(JSON.stringify(logger.warn.mock.calls)).not.toContain("private path");
   });
 
   it("mappa i cinque flussi funzionali e il messaggio diagnostico", async () => {
