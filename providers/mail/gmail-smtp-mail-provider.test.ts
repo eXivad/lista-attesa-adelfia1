@@ -111,6 +111,14 @@ describe("GmailSmtpMailProvider", () => {
         succeededCount: 2,
       }),
     );
+    expect(logger.info).toHaveBeenCalledWith(
+      "Autenticazione Gmail OAuth 2.0 confermata durante l'invio.",
+      expect.objectContaining({
+        event: "mail.smtp.authentication.succeeded",
+        operationId: "mail-operation-test",
+        source: "delivery",
+      }),
+    );
     const serializedLogs = JSON.stringify(logger.info.mock.calls);
     expect(serializedLogs).toContain("a***@example.it");
     expect(serializedLogs).not.toContain("anna@example.it");
@@ -243,6 +251,13 @@ describe("GmailSmtpMailProvider", () => {
     await expect(invalid.provider.sendDiagnosticMessage("non-una-email"))
       .rejects.toThrow("destinatari non validi");
     expect(invalid.quotaGuard.reserve).not.toHaveBeenCalled();
+    expect(invalid.logger.error).toHaveBeenCalledWith(
+      "Invio email bloccato: destinatari non validi.",
+      expect.objectContaining({
+        event: "mail.delivery.rejected",
+        reasonCode: "INVALID_RECIPIENTS",
+      }),
+    );
   });
 
   it("impedisce messaggi oltre il limite prudenziale", async () => {
@@ -273,6 +288,13 @@ describe("GmailSmtpMailProvider", () => {
     });
     await expect(limited.provider.sendDiagnosticMessage("anna@example.it"))
       .rejects.toBe(quotaError);
+    expect(limited.logger.warn).toHaveBeenCalledWith(
+      "Invio email bloccato: quota prudenziale esaurita.",
+      expect.objectContaining({
+        event: "mail.quota.exceeded",
+        retryAfter: "2026-09-06T12:00:00.000Z",
+      }),
+    );
   });
 
   it("considera fallito un invio accettato solo parzialmente", async () => {

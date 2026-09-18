@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import nodemailer, { type SendMailOptions } from "nodemailer";
 import { z } from "zod";
 
@@ -25,6 +26,34 @@ import {
 
 const MAIL_LOGO_CID = "logo-lista-attesa@agesci";
 
+type MailMessageType =
+  | "registration_confirmation"
+  | "acceptance_confirmation"
+  | "rejection_confirmation"
+  | "staff_invitation"
+  | "password_reset"
+  | "diagnostic";
+
+type MailLogContext = Record<string, string | number | boolean | null>;
+
+export interface MailLogger {
+  info(message: string, context: MailLogContext): void;
+  warn(message: string, context: MailLogContext): void;
+  error(message: string, context: MailLogContext): void;
+}
+
+const consoleMailLogger: MailLogger = {
+  info(message, context) {
+    console.info(`[mail] ${message}`, context);
+  },
+  warn(message, context) {
+    console.warn(`[mail] ${message}`, context);
+  },
+  error(message, context) {
+    console.error(`[mail] ${message}`, context);
+  },
+};
+
 interface GmailTransportResult {
   accepted: string[];
   rejected: string[];
@@ -49,6 +78,8 @@ export interface GmailSmtpMailProviderOptions {
   brandingLoader?: () => Promise<GmailMailBranding>;
   transport?: GmailMailTransport;
   clock?: () => Date;
+  logger?: MailLogger;
+  createOperationId?: () => string;
 }
 
 export interface GmailMailBranding {
@@ -68,73 +99,116 @@ export class MailProviderNotConfiguredError extends Error {
 
 export class GmailSmtpMailProvider implements MailProvider {
   private readonly clock: () => Date;
+  private readonly createOperationId: () => string;
+  private readonly logger: MailLogger;
   private readonly transport: GmailMailTransport;
 
   constructor(private readonly options: GmailSmtpMailProviderOptions) {
     this.clock = options.clock ?? (() => new Date());
+    this.createOperationId = options.createOperationId ?? randomUUID;
+    this.logger = options.logger ?? consoleMailLogger;
     this.transport = options.transport ?? createGmailTransport(options);
+    this.info("Provider email Gmail inizializzato.", {
+      event: "mail.provider.initialized",
+      authentication: "OAuth2",
+      smtpHost: "smtp.gmail.com",
+      smtpPort: 465,
+      secure: true,
+      pooled: true,
+      dailyRecipientLimit: options.dailyRecipientLimit,
+      maxRecipientsPerOperation: options.maxRecipientsPerMessage,
+    });
   }
 
   sendRegistrationConfirmation(input: RegistrationMailInput): Promise<void> {
-    return this.renderAndSend(input.recipients, (options) =>
+    return this.renderAndSend("registration_confirmation", input.recipients, (options) =>
       registrationConfirmationMail(input, options),
     );
   }
 
   sendAcceptanceConfirmation(input: StatusMailInput): Promise<void> {
-    return this.renderAndSend(input.recipients, (options) =>
+    return this.renderAndSend("acceptance_confirmation", input.recipients, (options) =>
       acceptanceConfirmationMail(input, options),
     );
   }
 
   sendRejectionConfirmation(input: StatusMailInput): Promise<void> {
-    return this.renderAndSend(input.recipients, (options) =>
+    return this.renderAndSend("rejection_confirmation", input.recipients, (options) =>
       rejectionConfirmationMail(input, options),
     );
   }
 
   sendStaffInvitation(input: StaffInvitationMailInput): Promise<void> {
-    return this.renderAndSend([input.recipient], (options) =>
+    return this.renderAndSend("staff_invitation", [input.recipient], (options) =>
       staffInvitationMail(input, options),
     );
   }
 
   sendPasswordReset(input: PasswordResetMailInput): Promise<void> {
-    return this.renderAndSend([input.recipient], (options) =>
+    return this.renderAndSend("password_reset", [input.recipient], (options) =>
       passwordResetMail(input, options),
     );
   }
 
   sendDiagnosticMessage(recipient: string): Promise<void> {
-    return this.renderAndSend([recipient], diagnosticMail);
+    return this.renderAndSend("diagnostic", [recipient], diagnosticMail);
   }
 
   async verifyConnection(): Promise<void> {
-    this.assertConfigured();
+    const operationId = this.createOperationId();
+    this.info("Verifica connessione e autenticazione Gmail SMTP avviata.", {
+      event: "mail.smtp.authentication.started",
+      operationId,
+      source: "verify",
+      smtpHost: "smtp.gmail.com",
+    });
+    this.assertConfigured({ operationId, source: "verify" });
     try {
       await this.transport.verify();
+      this.info("Autenticazione Gmail OAuth 2.0 riuscita.", {
+        event: "mail.smtp.authentication.succeeded",
+        operationId,
+        source: "verify",
+        smtpHost: "smtp.gmail.com",
+        secure: true,
+      });
     } catch (error) {
+      const diagnostic = smtpFailureDiagnostic(error);
+      this.error("Autenticazione o connessione Gmail SMTP non riuscita.", {
+        event: "mail.smtp.authentication.failed",
+        operationId,
+        source: "verify",
+        ...diagnostic,
+      });
       throw safeSmtpError(error);
     }
   }
 
   close(): void {
     this.transport.close();
+    this.info("Pool SMTP Gmail chiuso.", {
+      event: "mail.smtp.pool.closed",
+    });
   }
 
   private async renderAndSend(
+    messageType: MailMessageType,
     recipients: string[],
     render: (options: TemplateOptions) => MailContent,
   ): Promise<void> {
-    const branding = await this.loadBranding();
+    const operationId = this.createOperationId();
+    const branding = await this.loadBranding(operationId, messageType);
     const content = render({
       organizationName: branding.organizationName,
       ...(branding.logo ? { logoCid: MAIL_LOGO_CID } : {}),
     });
-    await this.send(recipients, content, branding);
+    await this.send(operationId, messageType, recipients, content, branding);
   }
 
-  private async loadBranding(): Promise<GmailMailBranding> {
+  private async loadBranding(
+    operationId: string,
+    messageType: MailMessageType,
+  ): Promise<GmailMailBranding> {
     const fallback = { organizationName: this.options.senderName.trim() };
     if (!this.options.brandingLoader) return fallback;
 
@@ -142,6 +216,12 @@ export class GmailSmtpMailProvider implements MailProvider {
       const loaded = await this.options.brandingLoader();
       const organizationName = loaded.organizationName.trim();
       if (!organizationName || organizationName.length > 120 || /[\r\n]/.test(organizationName)) {
+        this.warn("Branding email non valido: uso la configurazione di fallback.", {
+          event: "mail.branding.fallback",
+          operationId,
+          messageType,
+          reasonCode: "BRANDING_INVALID",
+        });
         return fallback;
       }
       return {
@@ -149,19 +229,54 @@ export class GmailSmtpMailProvider implements MailProvider {
         ...(isSupportedInlineLogo(loaded.logo) ? { logo: loaded.logo } : {}),
       };
     } catch {
-      console.error("Impossibile caricare il branding per il messaggio email.");
+      this.warn("Branding email non disponibile: uso la configurazione di fallback.", {
+        event: "mail.branding.fallback",
+        operationId,
+        messageType,
+        reasonCode: "BRANDING_LOAD_FAILED",
+      });
       return fallback;
     }
   }
 
   private async send(
+    operationId: string,
+    messageType: MailMessageType,
     recipients: string[],
     content: MailContent,
     branding: GmailMailBranding,
   ): Promise<void> {
-    this.assertConfigured();
-    const normalizedRecipients = normalizeRecipients(recipients);
+    this.assertConfigured({ operationId, messageType });
+    let normalizedRecipients: string[];
+    try {
+      normalizedRecipients = normalizeRecipients(recipients);
+    } catch (error) {
+      this.error("Invio email bloccato: destinatari non validi.", {
+        event: "mail.delivery.rejected",
+        operationId,
+        messageType,
+        reasonCode: "INVALID_RECIPIENTS",
+        recipientCount: recipients.length,
+      });
+      throw error;
+    }
+    this.info("Invio email avviato.", {
+      event: "mail.delivery.started",
+      operationId,
+      messageType,
+      recipientCount: normalizedRecipients.length,
+      deliveryMode: "individual_to",
+      priority: "high",
+    });
     if (normalizedRecipients.length > this.options.maxRecipientsPerMessage) {
+      this.warn("Invio email bloccato dal limite prudenziale per operazione.", {
+        event: "mail.delivery.rejected",
+        operationId,
+        messageType,
+        reasonCode: "RECIPIENT_LIMIT_EXCEEDED",
+        recipientCount: normalizedRecipients.length,
+        configuredLimit: this.options.maxRecipientsPerMessage,
+      });
       throw new Error("Il messaggio supera il limite prudenziale di destinatari configurato.");
     }
 
@@ -172,8 +287,33 @@ export class GmailSmtpMailProvider implements MailProvider {
         limit: this.options.dailyRecipientLimit,
         now: this.clock(),
       });
+      this.info("Quota prudenziale di invio riservata.", {
+        event: "mail.quota.reserved",
+        operationId,
+        messageType,
+        recipientCount: normalizedRecipients.length,
+        dailyRecipientLimit: this.options.dailyRecipientLimit,
+      });
     } catch (error) {
-      if (error instanceof MailDailyQuotaExceededError) throw error;
+      if (error instanceof MailDailyQuotaExceededError) {
+        this.warn("Invio email bloccato: quota prudenziale esaurita.", {
+          event: "mail.quota.exceeded",
+          operationId,
+          messageType,
+          reasonCode: "DAILY_RECIPIENT_QUOTA_EXCEEDED",
+          recipientCount: normalizedRecipients.length,
+          dailyRecipientLimit: this.options.dailyRecipientLimit,
+          retryAfter: error.retryAfter.toISOString(),
+        });
+        throw error;
+      }
+      this.error("Verifica della quota email non riuscita.", {
+        event: "mail.quota.failed",
+        operationId,
+        messageType,
+        reasonCode: "QUOTA_GUARD_FAILED",
+        recipientCount: normalizedRecipients.length,
+      });
       throw new Error("Impossibile verificare in sicurezza la quota di invio email.");
     }
 
@@ -200,36 +340,131 @@ export class GmailSmtpMailProvider implements MailProvider {
       disableUrlAccess: true,
     };
     let firstFailure: Error | null = null;
-    for (const recipient of normalizedRecipients) {
+    let firstFailureReasonCode: string | null = null;
+    let succeededCount = 0;
+    let failedCount = 0;
+    let authenticationConfirmed = false;
+    for (const [recipientIndex, recipient] of normalizedRecipients.entries()) {
+      const maskedRecipient = maskEmailAddress(recipient);
+      this.info("Invio al destinatario avviato.", {
+        event: "mail.delivery.recipient.started",
+        operationId,
+        messageType,
+        recipient: maskedRecipient,
+        recipientIndex: recipientIndex + 1,
+        recipientCount: normalizedRecipients.length,
+      });
       let result: GmailTransportResult;
       try {
         result = await this.transport.sendMail({ ...message, to: recipient });
       } catch (error) {
+        const diagnostic = smtpFailureDiagnostic(error);
         firstFailure ??= safeSmtpError(error);
+        firstFailureReasonCode ??= diagnostic.reasonCode;
+        failedCount += 1;
+        this.error("Invio al destinatario non riuscito.", {
+          event: "mail.delivery.recipient.failed",
+          operationId,
+          messageType,
+          recipient: maskedRecipient,
+          recipientIndex: recipientIndex + 1,
+          ...diagnostic,
+        });
+        if (diagnostic.authenticationFailure) {
+          this.error("Autenticazione Gmail OAuth 2.0 non riuscita durante l'invio.", {
+            event: "mail.smtp.authentication.failed",
+            operationId,
+            messageType,
+            source: "delivery",
+            ...diagnostic,
+          });
+        }
         continue;
       }
 
       if (result.rejected.length > 0 || result.accepted.length < 1) {
         firstFailure ??= new Error("Gmail non ha accettato tutti i destinatari del messaggio.");
+        firstFailureReasonCode ??= "SMTP_RECIPIENT_REJECTED";
+        failedCount += 1;
+        this.error("Gmail SMTP non ha accettato il destinatario.", {
+          event: "mail.delivery.recipient.failed",
+          operationId,
+          messageType,
+          recipient: maskedRecipient,
+          recipientIndex: recipientIndex + 1,
+          reasonCode: "SMTP_RECIPIENT_REJECTED",
+          reason: "Gmail SMTP non ha accettato il destinatario.",
+          acceptedCount: result.accepted.length,
+          rejectedCount: result.rejected.length,
+        });
+        continue;
       }
+
+      if (!authenticationConfirmed) {
+        authenticationConfirmed = true;
+        this.info("Autenticazione Gmail OAuth 2.0 confermata durante l'invio.", {
+          event: "mail.smtp.authentication.succeeded",
+          operationId,
+          messageType,
+          source: "delivery",
+          evidence: "smtp_message_accepted",
+        });
+      }
+      succeededCount += 1;
+      this.info("Invio al destinatario accettato da Gmail SMTP.", {
+        event: "mail.delivery.recipient.succeeded",
+        operationId,
+        messageType,
+        recipient: maskedRecipient,
+        recipientIndex: recipientIndex + 1,
+        acceptedCount: result.accepted.length,
+      });
     }
-    if (firstFailure) throw firstFailure;
+
+    if (firstFailure) {
+      this.error("Invio email completato con errori.", {
+        event: "mail.delivery.failed",
+        operationId,
+        messageType,
+        recipientCount: normalizedRecipients.length,
+        succeededCount,
+        failedCount,
+        reasonCode: firstFailureReasonCode ?? "UNKNOWN_SMTP_FAILURE",
+      });
+      throw firstFailure;
+    }
+
+    this.info("Invio email completato con successo.", {
+      event: "mail.delivery.succeeded",
+      operationId,
+      messageType,
+      recipientCount: normalizedRecipients.length,
+      succeededCount,
+    });
   }
 
-  private assertConfigured(): void {
-    const addressesValid = [this.options.user, this.options.replyTo || this.options.user].every(
-      (value) => z.email().safeParse(value.trim().toLowerCase()).success,
-    );
-    const credentialsPresent = [
-      this.options.clientId,
-      this.options.clientSecret,
-      this.options.refreshToken,
-      this.options.senderName,
-    ].every((value) => value.trim().length > 0 && !/[\r\n]/.test(value));
-
-    if (!addressesValid || !credentialsPresent) {
+  private assertConfigured(context: MailLogContext): void {
+    const invalidFields = invalidConfigurationFields(this.options);
+    if (invalidFields.length > 0) {
+      this.error("Configurazione Gmail OAuth 2.0 non valida.", {
+        event: "mail.configuration.invalid",
+        ...context,
+        invalidFields: invalidFields.join(","),
+      });
       throw new MailProviderNotConfiguredError();
     }
+  }
+
+  private info(message: string, context: MailLogContext): void {
+    safelyLog(() => this.logger.info(message, context));
+  }
+
+  private warn(message: string, context: MailLogContext): void {
+    safelyLog(() => this.logger.warn(message, context));
+  }
+
+  private error(message: string, context: MailLogContext): void {
+    safelyLog(() => this.logger.error(message, context));
   }
 }
 
@@ -289,23 +524,156 @@ function normalizeRecipients(recipients: string[]): string[] {
   return normalized;
 }
 
-function safeSmtpError(error: unknown): Error {
+function invalidConfigurationFields(options: GmailSmtpMailProviderOptions): string[] {
+  const invalidFields: string[] = [];
+  const user = options.user.trim().toLowerCase();
+  const replyTo = (options.replyTo || options.user).trim().toLowerCase();
+
+  if (!z.email().safeParse(user).success) invalidFields.push("GMAIL_USER");
+  if (!z.email().safeParse(replyTo).success) invalidFields.push("MAIL_REPLY_TO");
+  if (!isSafeConfigurationValue(options.clientId)) invalidFields.push("GMAIL_OAUTH_CLIENT_ID");
+  if (!isSafeConfigurationValue(options.clientSecret)) invalidFields.push("GMAIL_OAUTH_CLIENT_SECRET");
+  if (!isSafeConfigurationValue(options.refreshToken)) invalidFields.push("GMAIL_OAUTH_REFRESH_TOKEN");
+  if (!isSafeConfigurationValue(options.senderName)) invalidFields.push("MAIL_FROM_NAME");
+
+  return invalidFields;
+}
+
+function isSafeConfigurationValue(value: string): boolean {
+  return value.trim().length > 0 && !/[\r\n]/.test(value);
+}
+
+function maskEmailAddress(address: string): string {
+  const atIndex = address.lastIndexOf("@");
+  if (atIndex < 1) return "***";
+  return `${address.slice(0, 1)}***${address.slice(atIndex)}`;
+}
+
+interface SmtpFailureDiagnostic extends MailLogContext {
+  reasonCode: string;
+  reason: string;
+  smtpCode: string;
+  responseCode: number | null;
+  command: string;
+  authenticationFailure: boolean;
+}
+
+function smtpFailureDiagnostic(error: unknown): SmtpFailureDiagnostic {
   const smtpError = error as {
     code?: unknown;
     responseCode?: unknown;
     response?: unknown;
+    command?: unknown;
   };
-  const code = typeof smtpError.code === "string" ? smtpError.code.toUpperCase() : "";
-  const responseCode = typeof smtpError.responseCode === "number" ? smtpError.responseCode : 0;
-  const response = typeof smtpError.response === "string" ? smtpError.response.toLowerCase() : "";
+  const smtpCode = sanitizeSmtpMetadata(smtpError.code, 32);
+  const responseCode = typeof smtpError.responseCode === "number"
+    ? smtpError.responseCode
+    : null;
+  const command = sanitizeSmtpMetadata(smtpError.command, 40, true);
+  const response = typeof smtpError.response === "string"
+    ? smtpError.response.toLowerCase()
+    : "";
 
-  if (code === "EAUTH" || responseCode === 534 || responseCode === 535) {
-    return new Error("Autenticazione Gmail OAuth 2.0 non riuscita.");
+  if (/invalid_grant|token.+(?:revoked|expired|invalid)/.test(response)) {
+    return {
+      reasonCode: "OAUTH_REFRESH_TOKEN_REJECTED",
+      reason: "Il refresh token OAuth è scaduto, revocato o non valido.",
+      smtpCode,
+      responseCode,
+      command,
+      authenticationFailure: true,
+    };
+  }
+  if (/invalid_client/.test(response)) {
+    return {
+      reasonCode: "OAUTH_CLIENT_REJECTED",
+      reason: "Client ID o client secret OAuth non accettati da Google.",
+      smtpCode,
+      responseCode,
+      command,
+      authenticationFailure: true,
+    };
+  }
+  if (smtpCode === "EAUTH" || responseCode === 534 || responseCode === 535) {
+    return {
+      reasonCode: "OAUTH_AUTHENTICATION_REJECTED",
+      reason: "Credenziali OAuth rifiutate da Gmail SMTP.",
+      smtpCode,
+      responseCode,
+      command,
+      authenticationFailure: true,
+    };
   }
   if (/4\.7\.28|5\.4\.5|daily user sending limit|rate limit|quota/.test(response)) {
+    return {
+      reasonCode: "GMAIL_QUOTA_EXCEEDED",
+      reason: "Gmail ha applicato un limite temporaneo o giornaliero agli invii.",
+      smtpCode,
+      responseCode,
+      command,
+      authenticationFailure: false,
+    };
+  }
+  if (
+    (responseCode !== null && responseCode >= 400 && responseCode < 500) ||
+    ["ETIMEDOUT", "ECONNECTION", "ESOCKET"].includes(smtpCode)
+  ) {
+    return {
+      reasonCode: "SMTP_TEMPORARY_FAILURE",
+      reason: "Il servizio Gmail SMTP è temporaneamente non disponibile.",
+      smtpCode,
+      responseCode,
+      command,
+      authenticationFailure: false,
+    };
+  }
+  if (responseCode !== null && responseCode >= 500 && responseCode < 600) {
+    return {
+      reasonCode: "SMTP_REJECTED",
+      reason: "Gmail SMTP ha rifiutato definitivamente la richiesta.",
+      smtpCode,
+      responseCode,
+      command,
+      authenticationFailure: false,
+    };
+  }
+  return {
+    reasonCode: "UNKNOWN_SMTP_FAILURE",
+    reason: "Errore SMTP non classificato.",
+    smtpCode,
+    responseCode,
+    command,
+    authenticationFailure: false,
+  };
+}
+
+function sanitizeSmtpMetadata(value: unknown, maxLength: number, allowSpaces = false): string {
+  if (typeof value !== "string") return "UNKNOWN";
+  const normalized = value.trim().toUpperCase();
+  const pattern = allowSpaces ? /^[A-Z0-9 _-]+$/ : /^[A-Z0-9_-]+$/;
+  return normalized.length > 0 && normalized.length <= maxLength && pattern.test(normalized)
+    ? normalized
+    : "UNKNOWN";
+}
+
+function safelyLog(log: () => void): void {
+  try {
+    log();
+  } catch {
+    // Un logger esterno non deve mai interrompere l'invio delle email.
+  }
+}
+
+function safeSmtpError(error: unknown): Error {
+  const diagnostic = smtpFailureDiagnostic(error);
+
+  if (diagnostic.authenticationFailure) {
+    return new Error("Autenticazione Gmail OAuth 2.0 non riuscita.");
+  }
+  if (diagnostic.reasonCode === "GMAIL_QUOTA_EXCEEDED") {
     return new Error("Gmail ha temporaneamente limitato gli invii. Attendi il ripristino della quota prima di ritentare.");
   }
-  if ((responseCode >= 400 && responseCode < 500) || ["ETIMEDOUT", "ECONNECTION", "ESOCKET"].includes(code)) {
+  if (diagnostic.reasonCode === "SMTP_TEMPORARY_FAILURE") {
     return new Error("Il servizio Gmail SMTP è temporaneamente non disponibile. Riprova più tardi.");
   }
   return new Error("Invio tramite Gmail SMTP non riuscito.");
