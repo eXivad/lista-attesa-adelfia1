@@ -13,6 +13,14 @@ import {
 
 const NOW = new Date("2026-09-05T12:00:00Z");
 
+function createLogger() {
+  return {
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+  };
+}
+
 function setup(overrides: Partial<GmailSmtpMailProviderOptions> = {}) {
   const transport: GmailMailTransport = {
     sendMail: vi.fn(async () => ({
@@ -23,7 +31,8 @@ function setup(overrides: Partial<GmailSmtpMailProviderOptions> = {}) {
     close: vi.fn(),
   };
   const quotaGuard: MailQuotaGuard = { reserve: vi.fn(async () => undefined) };
-  const provider = new GmailSmtpMailProvider({
+  const logger = createLogger();
+  const providerOptions = {
     user: "gruppo@gmail.com",
     clientId: "client.apps.googleusercontent.com",
     clientSecret: "client-secret",
@@ -42,14 +51,17 @@ function setup(overrides: Partial<GmailSmtpMailProviderOptions> = {}) {
     })),
     transport,
     clock: () => NOW,
+    logger,
+    createOperationId: () => "mail-operation-test",
     ...overrides,
-  });
-  return { provider, quotaGuard, transport };
+  };
+  const provider = new GmailSmtpMailProvider(providerOptions);
+  return { provider, quotaGuard, transport, logger };
 }
 
 describe("GmailSmtpMailProvider", () => {
   it("invia un messaggio distinto per destinatario con To visibile e priorit\u00e0 alta", async () => {
-    const { provider, quotaGuard, transport } = setup();
+    const { provider, quotaGuard, transport, logger } = setup();
 
     await provider.sendRegistrationConfirmation({
       applicantName: "Mario Rossi",
@@ -89,6 +101,20 @@ describe("GmailSmtpMailProvider", () => {
       disableFileAccess: true,
       disableUrlAccess: true,
     }));
+    expect(logger.info).toHaveBeenCalledWith(
+      "Invio email completato con successo.",
+      expect.objectContaining({
+        event: "mail.delivery.succeeded",
+        operationId: "mail-operation-test",
+        messageType: "registration_confirmation",
+        recipientCount: 2,
+        succeededCount: 2,
+      }),
+    );
+    const serializedLogs = JSON.stringify(logger.info.mock.calls);
+    expect(serializedLogs).toContain("a***@example.it");
+    expect(serializedLogs).not.toContain("anna@example.it");
+    expect(serializedLogs).not.toContain("luigi@example.it");
   });
 
   it("mappa i cinque flussi funzionali e il messaggio diagnostico", async () => {
@@ -127,17 +153,59 @@ describe("GmailSmtpMailProvider", () => {
   });
 
   it("verifica la connessione e chiude il pool senza inviare messaggi", async () => {
-    const { provider, transport, quotaGuard } = setup();
+    const { provider, transport, quotaGuard, logger } = setup();
     await provider.verifyConnection();
     provider.close();
     expect(transport.verify).toHaveBeenCalledOnce();
     expect(transport.close).toHaveBeenCalledOnce();
     expect(quotaGuard.reserve).not.toHaveBeenCalled();
+    expect(logger.info).toHaveBeenCalledWith(
+      "Autenticazione Gmail OAuth 2.0 riuscita.",
+      expect.objectContaining({
+        event: "mail.smtp.authentication.succeeded",
+        operationId: "mail-operation-test",
+        source: "verify",
+      }),
+    );
+    expect(logger.info).toHaveBeenCalledWith(
+      "Pool SMTP Gmail chiuso.",
+      expect.objectContaining({ event: "mail.smtp.pool.closed" }),
+    );
+  });
+
+  it("registra una causa sicura quando l'autenticazione OAuth fallisce", async () => {
+    const transport: GmailMailTransport = {
+      sendMail: vi.fn(async () => ({ accepted: [], rejected: [] })),
+      verify: vi.fn(async () => {
+        throw {
+          code: "EAUTH",
+          responseCode: 535,
+          command: "AUTH XOAUTH2",
+          response: "535 5.7.8 invalid_grant refresh-token-segreto",
+        };
+      }),
+      close: vi.fn(),
+    };
+    const { provider, logger } = setup({ transport });
+
+    await expect(provider.verifyConnection())
+      .rejects.toThrow("Autenticazione Gmail OAuth 2.0 non riuscita");
+    expect(logger.error).toHaveBeenCalledWith(
+      "Autenticazione o connessione Gmail SMTP non riuscita.",
+      expect.objectContaining({
+        event: "mail.smtp.authentication.failed",
+        operationId: "mail-operation-test",
+        reasonCode: "OAUTH_REFRESH_TOKEN_REJECTED",
+        smtpCode: "EAUTH",
+        responseCode: 535,
+        command: "AUTH XOAUTH2",
+      }),
+    );
+    expect(JSON.stringify(logger.error.mock.calls)).not.toContain("refresh-token-segreto");
   });
 
   it("invia con il nome mittente di ripiego se il branding non è disponibile", async () => {
-    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
-    const { provider, transport } = setup({
+    const { provider, transport, logger } = setup({
       brandingLoader: vi.fn(async () => {
         throw new Error("database branding non disponibile");
       }),
@@ -149,10 +217,13 @@ describe("GmailSmtpMailProvider", () => {
     expect(message.from).toEqual({ name: "AGESCI Adelfia 1", address: "gruppo@gmail.com" });
     expect(message.attachments).toBeUndefined();
     expect(message.html).toContain("AGESCI Adelfia 1");
-    expect(consoleError).toHaveBeenCalledWith(
-      "Impossibile caricare il branding per il messaggio email.",
+    expect(logger.warn).toHaveBeenCalledWith(
+      "Branding email non disponibile: uso la configurazione di fallback.",
+      expect.objectContaining({
+        event: "mail.branding.fallback",
+        reasonCode: "BRANDING_LOAD_FAILED",
+      }),
     );
-    consoleError.mockRestore();
   });
 
   it("fallisce prima della quota con configurazione o destinatari non validi", async () => {
@@ -160,6 +231,13 @@ describe("GmailSmtpMailProvider", () => {
     await expect(missing.provider.sendDiagnosticMessage("anna@example.it"))
       .rejects.toBeInstanceOf(MailProviderNotConfiguredError);
     expect(missing.quotaGuard.reserve).not.toHaveBeenCalled();
+    expect(missing.logger.error).toHaveBeenCalledWith(
+      "Configurazione Gmail OAuth 2.0 non valida.",
+      expect.objectContaining({
+        event: "mail.configuration.invalid",
+        invalidFields: "GMAIL_OAUTH_REFRESH_TOKEN",
+      }),
+    );
 
     const invalid = setup();
     await expect(invalid.provider.sendDiagnosticMessage("non-una-email"))
@@ -224,7 +302,7 @@ describe("GmailSmtpMailProvider", () => {
       verify: vi.fn(async () => true as const),
       close: vi.fn(),
     };
-    const { provider } = setup({ transport });
+    const { provider, logger } = setup({ transport });
 
     await expect(provider.sendRegistrationConfirmation({
       applicantName: "Mario Rossi",
@@ -233,6 +311,19 @@ describe("GmailSmtpMailProvider", () => {
       recipients: ["anna@example.it", "luigi@example.it"],
     })).rejects.toThrow("Invio tramite Gmail SMTP non riuscito");
     expect(transport.sendMail).toHaveBeenCalledTimes(2);
+    expect(logger.error).toHaveBeenCalledWith(
+      "Invio al destinatario non riuscito.",
+      expect.objectContaining({
+        event: "mail.delivery.recipient.failed",
+        messageType: "registration_confirmation",
+        operationId: "mail-operation-test",
+        reasonCode: "UNKNOWN_SMTP_FAILURE",
+        recipient: "a***@example.it",
+      }),
+    );
+    const serializedLogs = JSON.stringify(logger.error.mock.calls);
+    expect(serializedLogs).not.toContain("anna@example.it");
+    expect(serializedLogs).not.toContain("Mario Rossi");
   });
 
   it("sanitizza errori OAuth, quota, temporanei e sconosciuti", async () => {
