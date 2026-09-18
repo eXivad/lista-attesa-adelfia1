@@ -48,7 +48,7 @@ function setup(overrides: Partial<GmailSmtpMailProviderOptions> = {}) {
 }
 
 describe("GmailSmtpMailProvider", () => {
-  it("invia un messaggio multipart con BCC, mittente coerente e protezioni di contenuto", async () => {
+  it("invia un messaggio distinto per destinatario con To visibile e priorit\u00e0 alta", async () => {
     const { provider, quotaGuard, transport } = setup();
 
     await provider.sendRegistrationConfirmation({
@@ -64,10 +64,17 @@ describe("GmailSmtpMailProvider", () => {
       limit: 450,
       now: NOW,
     });
-    expect(transport.sendMail).toHaveBeenCalledWith(expect.objectContaining({
+    expect(transport.sendMail).toHaveBeenCalledTimes(2);
+    const messages = vi.mocked(transport.sendMail).mock.calls.map(([message]) => message);
+    expect(messages.map((message) => message.to)).toEqual([
+      "anna@example.it",
+      "luigi@example.it",
+    ]);
+    expect(messages.every((message) => message.bcc === undefined)).toBe(true);
+    expect(messages[0]).toEqual(expect.objectContaining({
       from: { name: "AGESCI Adelfia 1", address: "gruppo@gmail.com" },
       replyTo: "gruppo@gmail.com",
-      bcc: ["anna@example.it", "luigi@example.it"],
+      priority: "high",
       subject: "Conferma iscrizione lista d'attesa - LA-2026-000123",
       text: expect.stringContaining("Mario Rossi"),
       html: expect.stringContaining("Richiesta ricevuta"),
@@ -107,9 +114,11 @@ describe("GmailSmtpMailProvider", () => {
     });
     await provider.sendDiagnosticMessage("anna@example.it");
 
-    expect(transport.sendMail).toHaveBeenCalledTimes(5);
+    expect(transport.sendMail).toHaveBeenCalledTimes(7);
     expect(vi.mocked(transport.sendMail).mock.calls.map(([message]) => message.subject)).toEqual([
       "Esito iscrizione LA-2026-000123: accettata",
+      "Esito iscrizione LA-2026-000123: accettata",
+      "Esito iscrizione LA-2026-000123",
       "Esito iscrizione LA-2026-000123",
       "Invito alla gestione della lista d'attesa - AGESCI Adelfia 1",
       "Reimposta la password - AGESCI Adelfia 1",
@@ -190,7 +199,9 @@ describe("GmailSmtpMailProvider", () => {
 
   it("considera fallito un invio accettato solo parzialmente", async () => {
     const transport: GmailMailTransport = {
-      sendMail: vi.fn(async () => ({ accepted: ["anna@example.it"], rejected: ["luigi@example.it"] })),
+      sendMail: vi.fn(async (message) => message.to === "anna@example.it"
+        ? { accepted: ["anna@example.it"], rejected: [] }
+        : { accepted: [], rejected: ["luigi@example.it"] }),
       verify: vi.fn(async () => true as const),
       close: vi.fn(),
     };
@@ -201,6 +212,27 @@ describe("GmailSmtpMailProvider", () => {
       registrationNumber: "LA-2026-000123",
       recipients: ["anna@example.it", "luigi@example.it"],
     })).rejects.toThrow("non ha accettato tutti");
+    expect(transport.sendMail).toHaveBeenCalledTimes(2);
+  });
+
+  it("tenta tutti i destinatari anche quando un singolo invio SMTP fallisce", async () => {
+    const transport: GmailMailTransport = {
+      sendMail: vi.fn(async (message) => {
+        if (message.to === "anna@example.it") throw { code: "EUNKNOWN" };
+        return { accepted: ["luigi@example.it"], rejected: [] };
+      }),
+      verify: vi.fn(async () => true as const),
+      close: vi.fn(),
+    };
+    const { provider } = setup({ transport });
+
+    await expect(provider.sendRegistrationConfirmation({
+      applicantName: "Mario Rossi",
+      applicantBirthDate: new Date("2018-05-12T00:00:00.000Z"),
+      registrationNumber: "LA-2026-000123",
+      recipients: ["anna@example.it", "luigi@example.it"],
+    })).rejects.toThrow("Invio tramite Gmail SMTP non riuscito");
+    expect(transport.sendMail).toHaveBeenCalledTimes(2);
   });
 
   it("sanitizza errori OAuth, quota, temporanei e sconosciuti", async () => {
