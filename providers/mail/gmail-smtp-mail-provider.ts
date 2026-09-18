@@ -177,37 +177,43 @@ export class GmailSmtpMailProvider implements MailProvider {
       throw new Error("Impossibile verificare in sicurezza la quota di invio email.");
     }
 
-    let result: GmailTransportResult;
-    try {
-      result = await this.transport.sendMail({
-        from: { name: branding.organizationName, address: this.options.user.trim().toLowerCase() },
-        replyTo: (this.options.replyTo || this.options.user).trim().toLowerCase(),
-        bcc: normalizedRecipients,
-        subject: content.subject,
-        text: content.text,
-        html: content.html,
-        ...(branding.logo
-          ? {
-              attachments: [{
-                filename: inlineLogoFilename(branding.logo.mimeType),
-                content: Buffer.from(branding.logo.content),
-                contentType: branding.logo.mimeType,
-                contentDisposition: "inline",
-                cid: MAIL_LOGO_CID,
-              }],
-            }
-          : {}),
-        headers: { "Auto-Submitted": "auto-generated" },
-        disableFileAccess: true,
-        disableUrlAccess: true,
-      });
-    } catch (error) {
-      throw safeSmtpError(error);
-    }
+    const message: SendMailOptions = {
+      from: { name: branding.organizationName, address: this.options.user.trim().toLowerCase() },
+      replyTo: (this.options.replyTo || this.options.user).trim().toLowerCase(),
+      priority: "high",
+      subject: content.subject,
+      text: content.text,
+      html: content.html,
+      ...(branding.logo
+        ? {
+            attachments: [{
+              filename: inlineLogoFilename(branding.logo.mimeType),
+              content: Buffer.from(branding.logo.content),
+              contentType: branding.logo.mimeType,
+              contentDisposition: "inline",
+              cid: MAIL_LOGO_CID,
+            }],
+          }
+        : {}),
+      headers: { "Auto-Submitted": "auto-generated" },
+      disableFileAccess: true,
+      disableUrlAccess: true,
+    };
+    let firstFailure: Error | null = null;
+    for (const recipient of normalizedRecipients) {
+      let result: GmailTransportResult;
+      try {
+        result = await this.transport.sendMail({ ...message, to: recipient });
+      } catch (error) {
+        firstFailure ??= safeSmtpError(error);
+        continue;
+      }
 
-    if (result.rejected.length > 0 || result.accepted.length < normalizedRecipients.length) {
-      throw new Error("Gmail non ha accettato tutti i destinatari del messaggio.");
+      if (result.rejected.length > 0 || result.accepted.length < 1) {
+        firstFailure ??= new Error("Gmail non ha accettato tutti i destinatari del messaggio.");
+      }
     }
+    if (firstFailure) throw firstFailure;
   }
 
   private assertConfigured(): void {
