@@ -181,6 +181,18 @@ describe("GmailSmtpMailProvider", () => {
     );
   });
 
+  it("non interrompe l'invio se il logger esterno fallisce", async () => {
+    const logger = {
+      info: vi.fn(() => { throw new Error("logger non disponibile"); }),
+      warn: vi.fn(() => { throw new Error("logger non disponibile"); }),
+      error: vi.fn(() => { throw new Error("logger non disponibile"); }),
+    };
+    const { provider, transport } = setup({ logger });
+
+    await expect(provider.sendDiagnosticMessage("anna@example.it")).resolves.toBeUndefined();
+    expect(transport.sendMail).toHaveBeenCalledOnce();
+  });
+
   it("registra una causa sicura quando l'autenticazione OAuth fallisce", async () => {
     const transport: GmailMailTransport = {
       sendMail: vi.fn(async () => ({ accepted: [], rejected: [] })),
