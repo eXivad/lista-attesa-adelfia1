@@ -23,6 +23,13 @@ import {
   type MailContent,
   type TemplateOptions,
 } from "./gmail-mail-templates";
+import {
+  EMAIL_LOGO_MAX_BYTES,
+  EMAIL_LOGO_MAX_DIMENSION,
+  optimizeGmailInlineLogo,
+  type GmailMailLogo,
+  type GmailMailLogoOptimizer,
+} from "./gmail-mail-logo";
 
 const MAIL_LOGO_CID = "logo-lista-attesa@agesci";
 
@@ -80,14 +87,12 @@ export interface GmailSmtpMailProviderOptions {
   clock?: () => Date;
   logger?: MailLogger;
   createOperationId?: () => string;
+  logoOptimizer?: GmailMailLogoOptimizer;
 }
 
 export interface GmailMailBranding {
   organizationName: string;
-  logo?: {
-    content: Uint8Array;
-    mimeType: string;
-  };
+  logo?: GmailMailLogo;
 }
 
 export class MailProviderNotConfiguredError extends Error {
@@ -101,12 +106,14 @@ export class GmailSmtpMailProvider implements MailProvider {
   private readonly clock: () => Date;
   private readonly createOperationId: () => string;
   private readonly logger: MailLogger;
+  private readonly logoOptimizer: GmailMailLogoOptimizer;
   private readonly transport: GmailMailTransport;
 
   constructor(private readonly options: GmailSmtpMailProviderOptions) {
     this.clock = options.clock ?? (() => new Date());
     this.createOperationId = options.createOperationId ?? randomUUID;
     this.logger = options.logger ?? consoleMailLogger;
+    this.logoOptimizer = options.logoOptimizer ?? optimizeGmailInlineLogo;
     this.transport = options.transport ?? createGmailTransport(options);
     this.info("Provider email Gmail inizializzato.", {
       event: "mail.provider.initialized",
@@ -224,9 +231,10 @@ export class GmailSmtpMailProvider implements MailProvider {
         });
         return fallback;
       }
+      const logo = await this.optimizeLogo(loaded.logo, operationId, messageType);
       return {
         organizationName,
-        ...(isSupportedInlineLogo(loaded.logo) ? { logo: loaded.logo } : {}),
+        ...(logo ? { logo } : {}),
       };
     } catch {
       this.warn("Branding email non disponibile: uso la configurazione di fallback.", {
@@ -236,6 +244,47 @@ export class GmailSmtpMailProvider implements MailProvider {
         reasonCode: "BRANDING_LOAD_FAILED",
       });
       return fallback;
+    }
+  }
+
+  private async optimizeLogo(
+    logo: GmailMailBranding["logo"],
+    operationId: string,
+    messageType: MailMessageType,
+  ): Promise<GmailMailLogo | undefined> {
+    if (!logo) return undefined;
+    if (!isSupportedInlineLogo(logo)) {
+      this.warn("Logo email non supportato: invio senza immagine.", {
+        event: "mail.branding.logo.omitted",
+        operationId,
+        messageType,
+        reasonCode: "LOGO_UNSUPPORTED",
+      });
+      return undefined;
+    }
+
+    try {
+      const optimized = await this.logoOptimizer(logo);
+      if (!isSupportedInlineLogo(optimized) || optimized.content.byteLength > EMAIL_LOGO_MAX_BYTES) {
+        throw new Error("unsafe optimized logo");
+      }
+      this.info("Logo email ottimizzato.", {
+        event: "mail.branding.logo.optimized",
+        operationId,
+        messageType,
+        originalByteSize: logo.content.byteLength,
+        optimizedByteSize: optimized.content.byteLength,
+        maxDimension: EMAIL_LOGO_MAX_DIMENSION,
+      });
+      return optimized;
+    } catch {
+      this.warn("Logo email non ottimizzabile: invio senza immagine.", {
+        event: "mail.branding.logo.omitted",
+        operationId,
+        messageType,
+        reasonCode: "LOGO_OPTIMIZATION_FAILED",
+      });
+      return undefined;
     }
   }
 
@@ -266,7 +315,7 @@ export class GmailSmtpMailProvider implements MailProvider {
       messageType,
       recipientCount: normalizedRecipients.length,
       deliveryMode: "individual_to",
-      priority: "high",
+      priority: "normal",
     });
     if (normalizedRecipients.length > this.options.maxRecipientsPerMessage) {
       this.warn("Invio email bloccato dal limite prudenziale per operazione.", {
@@ -320,7 +369,6 @@ export class GmailSmtpMailProvider implements MailProvider {
     const message: SendMailOptions = {
       from: { name: branding.organizationName, address: this.options.user.trim().toLowerCase() },
       replyTo: (this.options.replyTo || this.options.user).trim().toLowerCase(),
-      priority: "high",
       subject: content.subject,
       text: content.text,
       html: content.html,
