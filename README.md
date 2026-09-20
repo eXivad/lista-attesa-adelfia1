@@ -254,6 +254,8 @@ pnpm run mail:test
 
 Il primo comando non invia messaggi. Prima del secondo, impostare `MAIL_TEST_RECIPIENT` su una casella controllata personalmente.
 
+In produzione, un Capo Gruppo può eseguire la stessa prova da **Impostazioni → Test invio email** senza accesso alla console e senza aggiungere variabili d'ambiente: inserisce un solo destinatario e usa il modello diagnostico fisso. Non c'è un limite orario applicativo per questa prova, ma resta attiva la quota prudenziale giornaliera Gmail. L'esito positivo conferma soltanto l'accettazione da parte di Gmail SMTP: controllare nella casella destinataria Posta in arrivo, Spam e intestazioni.
+
 ## Importazione della lista d’attesa
 
 La procedura completa e il formato sono descritti in [docs/importazione-lista-attesa.md](docs/importazione-lista-attesa.md). Il template privo di dati reali è [docs/import-template.csv](docs/import-template.csv).

@@ -3,6 +3,7 @@
 import { useActionState, useId } from "react";
 
 import type { SettingsActionState } from "@/app/(backoffice)/impostazioni/actions";
+import type { MailTestActionState } from "@/app/(backoffice)/impostazioni/mail-test-action";
 import { Button, type ButtonProps } from "@/components/ui/button";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { Input } from "@/components/ui/input";
@@ -42,6 +43,49 @@ export function StaffInvitationForm({ action }: { action: Action }) {
 export function MailingRecipientForm({ action }: { action: Action }) {
   const [state, formAction, pending] = useActionState(action, { status: "idle" });
   return <form action={formAction} className="grid gap-4 sm:grid-cols-[1fr_1fr_auto]"><Field name="label" label="Etichetta" /><Field name="email" label="Email" type="email" /><div className="flex items-end"><Button disabled={pending}>Aggiungi</Button></div>{state.status === "error" && <p role="alert" className="text-sm text-red-700 sm:col-span-3">{state.message}</p>}</form>;
+}
+
+export function MailTestForm({
+  action,
+  defaultRecipient,
+}: {
+  action: (state: MailTestActionState, data: FormData) => Promise<MailTestActionState>;
+  defaultRecipient: string;
+}) {
+  const [state, formAction, pending] = useActionState(action, { status: "idle" });
+
+  return (
+    <form action={formAction} className="space-y-4">
+      <div className="grid gap-4 sm:grid-cols-[1fr_auto]">
+        <Field
+          name="recipient"
+          label="Destinatario della prova"
+          type="email"
+          maxLength={320}
+          autoComplete="email"
+          defaultValue={defaultRecipient}
+        />
+        <div className="flex items-end">
+          <Button className="w-full" disabled={pending}>
+            {pending ? "Invio in corso…" : "Invia email di prova"}
+          </Button>
+        </div>
+      </div>
+      <p className="text-sm text-stone-600">
+        Il test usa il modello diagnostico e la quota Gmail reale. Ogni invio può consumare un destinatario della quota.
+      </p>
+      {state.status === "success" && (
+        <p role="status" className="rounded-xl bg-emerald-50 p-3 text-sm font-medium text-emerald-900">
+          {state.message}
+        </p>
+      )}
+      {state.status === "error" && (
+        <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm font-medium text-red-800">
+          {state.message}
+        </p>
+      )}
+    </form>
+  );
 }
 
 export function PrivacyPolicyForm({ action }: { action: Action }) {

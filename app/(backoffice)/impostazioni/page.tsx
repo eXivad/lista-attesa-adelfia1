@@ -4,6 +4,7 @@ import { ExternalLink, ShieldCheck, UsersRound } from "lucide-react";
 import {
   GroupLogoForm,
   GroupNameForm,
+  MailTestForm,
   MailingRecipientForm,
   PrivacyPolicyForm,
   SettingsDangerForm,
@@ -29,6 +30,7 @@ import {
   updateStaffAction,
   uploadGroupLogoAction,
 } from "./actions";
+import { sendMailTestAction } from "./mail-test-action";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -38,7 +40,7 @@ interface SettingsPageProps {
 }
 
 export default async function SettingsPage({ searchParams }: SettingsPageProps) {
-  await requireCapability("users:manage");
+  const admin = await requireCapability("users:manage");
   const prisma = getPrismaClient();
   const privacyRepository = new PrismaPrivacyRepository(prisma);
   const [users, invitations, recipients, branding, privacyVersions, messages] = await Promise.all([
@@ -318,6 +320,18 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
               </li>
             ))}
           </ul>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <h2 className="font-slab text-xl font-bold text-violet-950">Test invio email</h2>
+          <p className="text-sm text-stone-600">
+            Invia una sola email di prova a una casella che controlli, anche dall&apos;app in produzione.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <MailTestForm action={sendMailTestAction} defaultRecipient={admin.email} />
         </CardContent>
       </Card>
     </div>
