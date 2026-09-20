@@ -12,5 +12,5 @@ it("espone un invio diagnostico accessibile con destinatario modificabile", () =
   expect(html).toContain('type="email"');
   expect(html).toContain('value="admin@example.it"');
   expect(html).toContain("Invia email di prova");
-  expect(html).toContain("3 tentativi ogni ora");
+  expect(html).not.toContain("3 tentativi ogni ora");
 });
