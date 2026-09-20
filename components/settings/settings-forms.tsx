@@ -72,7 +72,7 @@ export function MailTestForm({
         </div>
       </div>
       <p className="text-sm text-stone-600">
-        Il test usa il modello diagnostico e la quota Gmail reale. Sono consentiti 3 tentativi ogni ora per Capo Gruppo, anche se l'invio fallisce.
+        Il test usa il modello diagnostico e la quota Gmail reale. Ogni prova riuscita consuma un destinatario della quota.
       </p>
       {state.status === "success" && (
         <p role="status" className="rounded-xl bg-emerald-50 p-3 text-sm font-medium text-emerald-900">
