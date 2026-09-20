@@ -77,6 +77,8 @@ Solo dopo una verifica riuscita, impostare `MAIL_TEST_RECIPIENT` su una propria 
 pnpm run mail:test
 ```
 
+La stessa email diagnostica può essere inviata dal backoffice in **Impostazioni → Test invio email** da un Capo Gruppo, anche in produzione. Il destinatario si inserisce nel modulo, quindi `MAIL_TEST_RECIPIENT` serve solo al comando CLI. Il modulo non impone un limite orario aggiuntivo: rimane la quota prudenziale Gmail configurata per tutti gli invii.
+
 L'esito del comando significa che Gmail SMTP ha accettato il messaggio, non che il server destinatario lo abbia consegnato in Posta in arrivo. Confermare manualmente:
 
 - presenza nella cartella Inviati dell'account mittente;

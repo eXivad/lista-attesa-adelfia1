@@ -327,7 +327,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
         <CardHeader>
           <h2 className="font-slab text-xl font-bold text-violet-950">Test invio email</h2>
           <p className="text-sm text-stone-600">
-            Invia una sola email di prova a una casella che controlli, anche dall'app in produzione.
+            Invia una sola email di prova a una casella che controlli, anche dall&apos;app in produzione.
           </p>
         </CardHeader>
         <CardContent>
