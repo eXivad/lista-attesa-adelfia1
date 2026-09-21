@@ -34,6 +34,6 @@ Nessun piano esterno: i percorsi derivano dalla richiesta di raggruppare la conf
 
 - Nessuna email reale è stata inviata durante i test; dopo il deploy occorre verificare intestazioni, cartella Spam e bounce su caselle controllate.
 - Raggruppare riduce i messaggi SMTP ma non il numero di destinatari conteggiati dalla quota Gmail.
-- La modifica riguarda soltanto la conferma di nuova iscrizione; accettazione, rifiuto, inviti, reset e diagnostica conservano il proprio comportamento.
+- Questo primo ciclo riguardava la conferma di nuova iscrizione. Il comportamento è stato successivamente esteso ad accettazione e rifiuto nel ciclo documentato in `mail-status-recipient-grouping-tdd.md`; inviti, reset e diagnostica conservano il proprio comportamento.
 - Checkpoint RED: `eeb1b7a`.
 - Checkpoint GREEN: `9bd8925`.

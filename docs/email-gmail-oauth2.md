@@ -38,7 +38,7 @@ Per gli account Gmail personali Google indica il blocco quando si superano 500 d
 
 L'applicazione usa per default un tetto prudenziale di 450 destinatari in una finestra mobile di 24 ore. Ogni tentativo viene riservato su PostgreSQL sotto lock transazionale prima della connessione SMTP. La riserva resta conteggiata anche in caso di timeout, perché Gmail potrebbe avere già accettato il messaggio. Gli invii eseguiti manualmente dalla stessa casella non sono visibili all'applicazione: ridurre `GMAIL_DAILY_RECIPIENT_LIMIT` per lasciare loro spazio.
 
-Ogni messaggio ha inoltre un massimo predefinito di 20 destinatari. Gli indirizzi sono deduplicati. Nella conferma di nuova iscrizione i recapiti dei due genitori sono inseriti in `To`, mentre la mailing list interna è inserita in `Bcc` e non è visibile alla famiglia; se un indirizzo compare in entrambi i gruppi viene mantenuto soltanto in `To`. Gli altri flussi continuano a inviare un messaggio distinto con un solo destinatario visibile.
+Ogni messaggio ha inoltre un massimo predefinito di 20 destinatari. Gli indirizzi sono deduplicati. Nelle conferme di nuova iscrizione, accettazione e rifiuto i recapiti dei due genitori sono inseriti in `To`, mentre la mailing list interna è inserita in `Bcc` e non è visibile alla famiglia; se un indirizzo compare in entrambi i gruppi viene mantenuto soltanto in `To`. Inviti, reset password e diagnostica continuano a usare un solo destinatario visibile.
 
 Raggruppare la conferma riduce il numero di messaggi SMTP, ma non il consumo della quota: Gmail considera anche il numero complessivo di destinatari e l'applicazione riserva quindi la somma di `To` e `Bcc`.
 
@@ -88,7 +88,7 @@ L'esito del comando significa che Gmail SMTP ha accettato il messaggio, non che 
 - intestazioni `Authentication-Results` con SPF, DKIM e DMARC coerenti;
 - mittente, Reply-To, testo semplice, HTML e link;
 - intestazione, nome del Gruppo, firma e logo inline configurato;
-- nella conferma iscrizione, presenza dei genitori in `To` e assenza della mailing list interna da `To`/`Cc`;
+- nelle email di iscrizione, accettazione e rifiuto, presenza dei genitori in `To` e assenza della mailing list interna da `To`/`Cc`;
 - eventuali bounce nella casella mittente.
 
 Dopo il test diagnostico vanno collaudati separatamente iscrizione, accettazione, rifiuto, invito Capo e reset password. Nell'outbox lo stato `SENT` significa “accettato dal server SMTP Gmail”; la consegna finale richiede sempre il controllo dei bounce.
