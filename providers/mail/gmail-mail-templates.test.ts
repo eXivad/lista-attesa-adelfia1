@@ -135,7 +135,9 @@ describe("template email Gmail", () => {
     expect(message.html).toContain("@media (prefers-color-scheme: dark)");
     expect(message.html).toContain(".email-page{background:#111827!important}");
     expect(message.html).toContain(".email-card{background:#1c1917!important}");
-    expect(message.html).toContain(".email-content{color:#f5f5f4!important}");
+    expect(message.html).toContain(
+      ".email-content{background:#1c1917!important;color:#f5f5f4!important}",
+    );
     expect(message.html).toContain(".email-logo{background:#ffffff!important}");
   });
 });

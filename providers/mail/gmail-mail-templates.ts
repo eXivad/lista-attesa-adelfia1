@@ -48,10 +48,10 @@ export function registrationConfirmationMail(
         strong(formatDate(input.applicantBirthDate)),
       ],
       [
-        "La richiesta sarà presa in carico dagli incaricati del Gruppo e sarà valutata in base all’anno di nascita del minore, all’ordine cronologico di ricezione e alla disponibilità di posti nella branca di riferimento.",
+        "La richiesta sarà presa in carico dalla Comunità Capi e dalle singole Staff e sarà valutata in base all’anno di nascita del minore, all’ordine cronologico di ricezione e alla disponibilità di posti nella branca di riferimento.",
       ],
       [
-        "Vi ricordiamo che la compilazione del modulo non comporta l’iscrizione automatica ad AGESCI e non garantisce la disponibilità di un posto.",
+        strong("Vi ricordiamo che la compilazione del modulo non comporta l’iscrizione automatica ad AGESCI e non garantisce la disponibilità di un posto."),
       ],
       [
         "In caso di disponibilità, sarete ricontattati ai recapiti indicati nel modulo per verificare il vostro interesse e, se necessario, procedere con l’eventuale iter di iscrizione associativa ufficiale.",
@@ -76,9 +76,8 @@ export function acceptanceConfirmationMail(
     heading: "Iscrizione accettata",
     paragraphs: [
       ["Gentile famiglia,"],
-      ["l’iscrizione di ", strong(input.applicantName), " è stata accettata."],
-      ["Numero di iscrizione: ", strong(input.registrationNumber)],
-      ["Il Gruppo vi contatterà per i prossimi passi."],
+      ["a seguito del colloquio telefonico, vi confermiamo di aver registrato la vostra ", strong("accettazione del posto proposto "), "per ", strong(input.applicantName), " presso il Gruppo Scout AGESCI Adelfia 1"],
+      ["Sarete ricontattati per ricevere le informazioni necessarie e procedere con i successivi passaggi dell’iscrizione."],
     ],
     ...options,
   });
@@ -98,7 +97,6 @@ export function rejectionConfirmationMail(
         strong(input.applicantName),
         ".",
       ],
-      ["Numero di iscrizione: ", strong(input.registrationNumber)],
       [
         "La relativa iscrizione alla lista d’attesa verrà quindi considerata conclusa secondo le modalità previste dal Gruppo.",
       ],
@@ -196,11 +194,11 @@ function transactionalMail(input: TransactionalMailInput): MailContent {
   const paragraphs = input.paragraphs
     .map(
       (paragraph) =>
-        `<p style="margin:0 0 16px;line-height:1.55">${renderHtml(paragraph)}</p>`,
+        `<p class="email-copy" style="margin:0 0 16px;line-height:1.55;color:#292524">${renderHtml(paragraph)}</p>`,
     )
     .join("");
   const action = input.action
-    ? `<p style="margin:24px 0"><a href="${escapeHtml(input.action.url)}" style="display:inline-block;background:#5b21b6;color:#ffffff;text-decoration:none;padding:12px 18px;border-radius:8px;font-weight:700">${escapeHtml(input.action.label)}</a></p><p style="margin:0 0 16px;font-size:13px;color:#57534e;line-height:1.5;word-break:break-all">Se il pulsante non funziona, copia questo indirizzo nel browser:<br>${escapeHtml(input.action.url)}</p>`
+    ? `<p style="margin:24px 0"><a class="email-button" href="${escapeHtml(input.action.url)}" style="display:inline-block;background:#5b21b6;color:#ffffff;text-decoration:none;padding:12px 18px;border-radius:8px;font-weight:700">${escapeHtml(input.action.label)}</a></p><p class="email-muted" style="margin:0 0 16px;font-size:13px;color:#57534e;line-height:1.5;word-break:break-all">Se il pulsante non funziona, copia questo indirizzo nel browser:<br>${escapeHtml(input.action.url)}</p>`
     : "";
   const logo = input.logoCid
   ? `
@@ -213,7 +211,7 @@ function transactionalMail(input: TransactionalMailInput): MailContent {
         style="border-collapse:separate"
       >
         <tr>
-          <td
+          <td class="email-logo"
             bgcolor="#ffffff"
             style="
               background:#ffffff;
@@ -243,8 +241,12 @@ function transactionalMail(input: TransactionalMailInput): MailContent {
   return {
     subject: input.subject,
     text: textLines.join("\n").trim(),
-    html: `<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;background:#f5f5f4;color:#292524;font-family:Arial,sans-serif"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="width:100%;background:#f5f5f4"><tr><td align="center" style="padding:24px 12px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="width:100%;max-width:600px;background:#ffffff;border-radius:12px;overflow:hidden"><tr><td style="padding:24px 32px;background:#4c1d95;color:#ffffff"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr>${logo}<td valign="middle"><div style="font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#ddd6fe">Lista d’Attesa - AGESCI</div><div style="margin-top:5px;font-size:19px;font-weight:700;line-height:1.3;color:#ffffff">${escapeHtml(input.organizationName)}</div></td></tr></table></td></tr><tr><td style="padding:32px"><h1 style="margin:0 0 24px;color:#4c1d95;font-size:24px;line-height:1.25">${escapeHtml(input.heading)}</h1>${paragraphs}${action}<p style="margin:28px 0 0;line-height:1.55">Cordiali saluti,<br><strong>${escapeHtml(input.organizationName)}</strong></p><p style="margin:24px 0 0;padding-top:20px;border-top:1px solid #e7e5e4;font-size:13px;line-height:1.5;color:#57534e">Messaggio automatico inviato da ${escapeHtml(input.organizationName)}.</p></td></tr></table></td></tr></table></body></html>`,
+    html: `<!doctype html><html lang="it" style="color-scheme:light dark;supported-color-schemes:light dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><meta name="supported-color-schemes" content="light dark">${emailColorSchemeStyles()}</head><body class="email-page" bgcolor="#f5f5f4" style="margin:0;background:#f5f5f4;color:#292524;font-family:Arial,sans-serif"><table class="email-page" role="presentation" width="100%" cellspacing="0" cellpadding="0" bgcolor="#f5f5f4" style="width:100%;background:#f5f5f4"><tr><td align="center" style="padding:24px 12px"><table class="email-card" role="presentation" width="100%" cellspacing="0" cellpadding="0" bgcolor="#ffffff" style="width:100%;max-width:600px;background:#ffffff;border-radius:12px;overflow:hidden"><tr><td class="email-header" bgcolor="#4c1d95" style="padding:24px 32px;background:#4c1d95;color:#ffffff"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr>${logo}<td valign="middle"><div class="email-kicker" style="font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#ddd6fe">Lista d’Attesa - AGESCI</div><div class="email-group" style="margin-top:5px;font-size:19px;font-weight:700;line-height:1.3;color:#ffffff">${escapeHtml(input.organizationName)}</div></td></tr></table></td></tr><tr><td class="email-content" bgcolor="#ffffff" style="padding:32px;background:#ffffff;color:#292524"><h1 class="email-heading" style="margin:0 0 24px;color:#4c1d95;font-size:24px;line-height:1.25">${escapeHtml(input.heading)}</h1>${paragraphs}${action}<p class="email-copy" style="margin:28px 0 0;line-height:1.55;color:#292524">Cordiali saluti,<br><strong>${escapeHtml(input.organizationName)}</strong></p><p class="email-muted" style="margin:24px 0 0;padding-top:20px;border-top:1px solid #e7e5e4;font-size:13px;line-height:1.5;color:#57534e">Messaggio automatico inviato da ${escapeHtml(input.organizationName)}.</p></td></tr></table></td></tr></table></body></html>`,
   };
+}
+
+function emailColorSchemeStyles(): string {
+  return `<style>:root{color-scheme:light dark;supported-color-schemes:light dark}@media (prefers-color-scheme: dark){.email-page{background:#111827!important}.email-card{background:#1c1917!important}.email-content{background:#1c1917!important;color:#f5f5f4!important}.email-copy{color:#f5f5f4!important}.email-header{background:#4c1d95!important;color:#ffffff!important}.email-heading,.email-link{color:#c4b5fd!important}.email-kicker{color:#ddd6fe!important}.email-group{color:#ffffff!important}.email-muted{color:#d6d3d1!important;border-top-color:#57534e!important}.email-button{background:#7c3aed!important;color:#ffffff!important}.email-logo{background:#ffffff!important}}[data-ogsc] .email-page{background:#111827!important}[data-ogsc] .email-card,[data-ogsc] .email-content{background:#1c1917!important}[data-ogsc] .email-content,[data-ogsc] .email-copy{color:#f5f5f4!important}[data-ogsc] .email-header{background:#4c1d95!important;color:#ffffff!important}[data-ogsc] .email-heading,[data-ogsc] .email-link{color:#c4b5fd!important}[data-ogsc] .email-muted{color:#d6d3d1!important;border-top-color:#57534e!important}[data-ogsc] .email-logo{background:#ffffff!important}</style>`;
 }
 
 function strong(text: string): MailFragment {
@@ -266,7 +268,7 @@ function renderHtml(paragraph: MailParagraph): string {
       const escapedText = escapeHtml(fragment.text);
       const content = fragment.strong ? `<strong>${escapedText}</strong>` : escapedText;
       return fragment.href
-        ? `<a href="${escapeHtml(fragment.href)}" style="color:#5b21b6;text-decoration:underline">${content}</a>`
+        ? `<a class="email-link" href="${escapeHtml(fragment.href)}" style="color:#5b21b6;text-decoration:underline">${content}</a>`
         : content;
     })
     .join("");
