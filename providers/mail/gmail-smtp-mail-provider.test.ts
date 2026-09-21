@@ -395,6 +395,41 @@ describe("GmailSmtpMailProvider", () => {
     expect(transport.sendMail).toHaveBeenCalledOnce();
   });
 
+  it("sanitizza un errore SMTP dell'invio raggruppato senza esporre i destinatari", async () => {
+    const transport: GmailMailTransport = {
+      sendMail: vi.fn(async () => {
+        throw { code: "ETIMEDOUT", response: "socket per anna@example.it con token-segreto" };
+      }),
+      verify: vi.fn(async () => true as const),
+      close: vi.fn(),
+    };
+    const { provider, logger } = setup({ transport });
+
+    const promise = provider.sendRegistrationConfirmation({
+      applicantName: "Mario Rossi",
+      applicantBirthDate: new Date("2018-05-12T00:00:00.000Z"),
+      registrationNumber: "LA-2026-000123",
+      recipients: ["anna@example.it", "luigi@example.it"],
+      bccRecipients: ["capi@example.it"],
+    });
+
+    await expect(promise).rejects.toThrow("temporaneamente non disponibile");
+    await expect(promise).rejects.not.toThrow("anna@example.it");
+    await expect(promise).rejects.not.toThrow("token-segreto");
+    expect(transport.sendMail).toHaveBeenCalledOnce();
+    expect(logger.error).toHaveBeenCalledWith(
+      "Invio email raggruppato non riuscito.",
+      expect.objectContaining({
+        event: "mail.delivery.failed",
+        messageType: "registration_confirmation",
+        reasonCode: "SMTP_TEMPORARY_FAILURE",
+        recipientCount: 3,
+      }),
+    );
+    expect(JSON.stringify(logger.error.mock.calls)).not.toContain("anna@example.it");
+    expect(JSON.stringify(logger.error.mock.calls)).not.toContain("token-segreto");
+  });
+
   it("tenta tutti i destinatari anche quando un singolo invio SMTP fallisce", async () => {
     const transport: GmailMailTransport = {
       sendMail: vi.fn(async (message) => {
