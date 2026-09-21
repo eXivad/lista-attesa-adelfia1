@@ -28,7 +28,8 @@ function setup(status: ApplicantStatus = "DA_CHIAMARE") {
         return {
           changed: true as const,
           outboxId: "mail-1",
-          recipients: ["anna@example.it", "luigi@example.it", "capi@example.it"],
+          recipients: ["anna@example.it", "luigi@example.it"],
+          bccRecipients: ["capi@example.it"],
         };
       }
       return { changed: true as const, outboxId: null };
@@ -78,7 +79,8 @@ describe("ApplicantMutationService", () => {
     expect(mailProvider.sendAcceptanceConfirmation).toHaveBeenCalledWith({
       applicantName: "Mario Rossi",
       registrationNumber: expect.any(String),
-      recipients: ["anna@example.it", "luigi@example.it", "capi@example.it"],
+      recipients: ["anna@example.it", "luigi@example.it"],
+      bccRecipients: ["capi@example.it"],
     });
     expect(repository.markMailDelivered).toHaveBeenCalledWith("mail-1", NOW);
     expect(result.emailDelivery).toBe("SENT");
@@ -90,6 +92,12 @@ describe("ApplicantMutationService", () => {
 
     const result = await service.changeStatus("applicant-1", "RIFIUTATO");
 
+    expect(mailProvider.sendRejectionConfirmation).toHaveBeenCalledWith({
+      applicantName: "Mario Rossi",
+      registrationNumber: expect.any(String),
+      recipients: ["anna@example.it", "luigi@example.it"],
+      bccRecipients: ["capi@example.it"],
+    });
     expect(result).toMatchObject({ status: "RIFIUTATO", emailDelivery: "FAILED" });
     expect(repository.markMailFailed).toHaveBeenCalledWith("mail-1", NOW, "webhook offline");
   });

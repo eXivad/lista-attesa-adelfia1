@@ -379,7 +379,7 @@ Con più repliche, la piattaforma deve offrire una Data Cache condivisa oppure s
 - `.gitignore` esclude gli export `docs/import-*`, le cartelle `data/`, `backups/`, `reports/` e i file `*.dump`.
 - Le variabili sensibili sono validate lato server e non hanno prefisso `NEXT_PUBLIC_`.
 - Il rate limiting non conserva IP in chiaro.
-- Le email multiple usano BCC e non espongono i destinatari.
+- Nelle email di iscrizione, accettazione e rifiuto i genitori sono visibili in `To`, mentre la mailing list interna usa `Bcc`; inviti, reset e diagnostica hanno un solo destinatario visibile.
 - Prima di rendere pubblico il repository, controllare anche issue, PR, Actions artifacts e cronologia GitHub.
 
 La pubblicazione del codice non rende pubblicabili i dati reali trattati dall’applicazione. Chi distribuisce il progetto deve predisporre informativa, base giuridica, autorizzazioni, backup, retention e procedure di gestione degli interessati adeguate al proprio contesto.

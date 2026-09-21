@@ -18,7 +18,12 @@ function createClient() {
     callParticipation: { updateMany: vi.fn(async () => ({ count: 1 })) },
     blockedIdentifier: { upsert: vi.fn(async () => ({})) },
     mailOutbox: { create: vi.fn(async () => ({})) },
-    mailingRecipient: { findMany: vi.fn(async () => [{ email: "capi@example.it" }]) },
+    mailingRecipient: {
+      findMany: vi.fn(async () => [
+        { email: "capi@example.it" },
+        { email: "ANNA@example.it" },
+      ]),
+    },
   };
   const client = {
     waitingListEntry: {
@@ -110,7 +115,8 @@ describe("PrismaApplicantMutationRepository", () => {
     expect(result).toEqual({
       changed: true,
       outboxId: "new-id",
-      recipients: ["anna@example.it", "luigi@example.it", "capi@example.it"],
+      recipients: ["anna@example.it", "luigi@example.it"],
+      bccRecipients: ["capi@example.it"],
     });
     expect(transaction.waitingListEntry.updateMany).toHaveBeenCalledWith({
       where: { id: "applicant-1", status: "DA_CHIAMARE" },
@@ -121,7 +127,12 @@ describe("PrismaApplicantMutationRepository", () => {
     );
     expect(transaction.blockedIdentifier.upsert).toHaveBeenCalledOnce();
     expect(transaction.mailOutbox.create).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ type: "REJECTION_CONFIRMATION" }) }),
+      expect.objectContaining({
+        data: expect.objectContaining({
+          type: "REJECTION_CONFIRMATION",
+          recipients: ["anna@example.it", "luigi@example.it", "capi@example.it"],
+        }),
+      }),
     );
   });
 

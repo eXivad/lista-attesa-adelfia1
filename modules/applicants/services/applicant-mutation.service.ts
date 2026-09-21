@@ -60,7 +60,7 @@ export interface DeleteApplicantCommand {
 export type StatusTransitionResult =
   | { changed: false }
   | { changed: true; outboxId: null }
-  | { changed: true; outboxId: string; recipients: string[] };
+  | { changed: true; outboxId: string; recipients: string[]; bccRecipients: string[] };
 
 export interface ApplicantMutationRepository {
   getApplicant(id: string): Promise<ApplicantMutationSummary | null>;
@@ -150,6 +150,7 @@ export class ApplicantMutationService {
       applicantName: `${applicant.firstName} ${applicant.lastName}`,
       registrationNumber: applicant.registrationNumber,
       recipients: transition.recipients,
+      bccRecipients: transition.bccRecipients,
     };
     let emailDelivery: "SENT" | "FAILED" = "SENT";
     try {

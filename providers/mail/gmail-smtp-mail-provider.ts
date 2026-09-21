@@ -128,20 +128,29 @@ export class GmailSmtpMailProvider implements MailProvider {
   }
 
   sendRegistrationConfirmation(input: RegistrationMailInput): Promise<void> {
-    return this.renderAndSend("registration_confirmation", input.recipients, (options) =>
-      registrationConfirmationMail(input, options),
+    return this.renderAndSendGrouped(
+      "registration_confirmation",
+      input.recipients,
+      input.bccRecipients,
+      (options) => registrationConfirmationMail(input, options),
     );
   }
 
   sendAcceptanceConfirmation(input: StatusMailInput): Promise<void> {
-    return this.renderAndSend("acceptance_confirmation", input.recipients, (options) =>
-      acceptanceConfirmationMail(input, options),
+    return this.renderAndSendGrouped(
+      "acceptance_confirmation",
+      input.recipients,
+      input.bccRecipients,
+      (options) => acceptanceConfirmationMail(input, options),
     );
   }
 
   sendRejectionConfirmation(input: StatusMailInput): Promise<void> {
-    return this.renderAndSend("rejection_confirmation", input.recipients, (options) =>
-      rejectionConfirmationMail(input, options),
+    return this.renderAndSendGrouped(
+      "rejection_confirmation",
+      input.recipients,
+      input.bccRecipients,
+      (options) => rejectionConfirmationMail(input, options),
     );
   }
 
@@ -210,6 +219,21 @@ export class GmailSmtpMailProvider implements MailProvider {
       ...(branding.logo ? { logoCid: MAIL_LOGO_CID } : {}),
     });
     await this.send(operationId, messageType, recipients, content, branding);
+  }
+
+  private async renderAndSendGrouped(
+    messageType: MailMessageType,
+    recipients: string[],
+    bccRecipients: string[],
+    render: (options: TemplateOptions) => MailContent,
+  ): Promise<void> {
+    const operationId = this.createOperationId();
+    const branding = await this.loadBranding(operationId, messageType);
+    const content = render({
+      organizationName: branding.organizationName,
+      ...(branding.logo ? { logoCid: MAIL_LOGO_CID } : {}),
+    });
+    await this.send(operationId, messageType, recipients, content, branding, bccRecipients);
   }
 
   private async loadBranding(
@@ -294,36 +318,45 @@ export class GmailSmtpMailProvider implements MailProvider {
     recipients: string[],
     content: MailContent,
     branding: GmailMailBranding,
+    bccRecipients?: string[],
   ): Promise<void> {
     this.assertConfigured({ operationId, messageType });
     let normalizedRecipients: string[];
+    let normalizedBccRecipients: string[] = [];
     try {
       normalizedRecipients = normalizeRecipients(recipients);
+      const visibleRecipientSet = new Set(normalizedRecipients);
+      normalizedBccRecipients = normalizeOptionalRecipients(bccRecipients ?? [])
+        .filter((recipient) => !visibleRecipientSet.has(recipient));
     } catch (error) {
       this.error("Invio email bloccato: destinatari non validi.", {
         event: "mail.delivery.rejected",
         operationId,
         messageType,
         reasonCode: "INVALID_RECIPIENTS",
-        recipientCount: recipients.length,
+        recipientCount: recipients.length + (bccRecipients?.length ?? 0),
       });
       throw error;
     }
+    const allRecipients = [...normalizedRecipients, ...normalizedBccRecipients];
+    const groupedDelivery = bccRecipients !== undefined;
     this.info("Invio email avviato.", {
       event: "mail.delivery.started",
       operationId,
       messageType,
-      recipientCount: normalizedRecipients.length,
-      deliveryMode: "individual_to",
+      recipientCount: allRecipients.length,
+      deliveryMode: groupedDelivery ? "grouped_to_bcc" : "individual_to",
+      toRecipients: normalizedRecipients.map(maskEmailAddress).join(","),
+      bccRecipients: normalizedBccRecipients.map(maskEmailAddress).join(","),
       priority: "normal",
     });
-    if (normalizedRecipients.length > this.options.maxRecipientsPerMessage) {
+    if (allRecipients.length > this.options.maxRecipientsPerMessage) {
       this.warn("Invio email bloccato dal limite prudenziale per operazione.", {
         event: "mail.delivery.rejected",
         operationId,
         messageType,
         reasonCode: "RECIPIENT_LIMIT_EXCEEDED",
-        recipientCount: normalizedRecipients.length,
+        recipientCount: allRecipients.length,
         configuredLimit: this.options.maxRecipientsPerMessage,
       });
       throw new Error("Il messaggio supera il limite prudenziale di destinatari configurato.");
@@ -332,7 +365,7 @@ export class GmailSmtpMailProvider implements MailProvider {
     try {
       await this.options.quotaGuard.reserve({
         sender: this.options.user,
-        recipientCount: normalizedRecipients.length,
+        recipientCount: allRecipients.length,
         limit: this.options.dailyRecipientLimit,
         now: this.clock(),
       });
@@ -340,7 +373,7 @@ export class GmailSmtpMailProvider implements MailProvider {
         event: "mail.quota.reserved",
         operationId,
         messageType,
-        recipientCount: normalizedRecipients.length,
+        recipientCount: allRecipients.length,
         dailyRecipientLimit: this.options.dailyRecipientLimit,
       });
     } catch (error) {
@@ -350,7 +383,7 @@ export class GmailSmtpMailProvider implements MailProvider {
           operationId,
           messageType,
           reasonCode: "DAILY_RECIPIENT_QUOTA_EXCEEDED",
-          recipientCount: normalizedRecipients.length,
+          recipientCount: allRecipients.length,
           dailyRecipientLimit: this.options.dailyRecipientLimit,
           retryAfter: error.retryAfter.toISOString(),
         });
@@ -361,7 +394,7 @@ export class GmailSmtpMailProvider implements MailProvider {
         operationId,
         messageType,
         reasonCode: "QUOTA_GUARD_FAILED",
-        recipientCount: normalizedRecipients.length,
+        recipientCount: allRecipients.length,
       });
       throw new Error("Impossibile verificare in sicurezza la quota di invio email.");
     }
@@ -387,6 +420,67 @@ export class GmailSmtpMailProvider implements MailProvider {
       disableFileAccess: true,
       disableUrlAccess: true,
     };
+    if (groupedDelivery) {
+      let result: GmailTransportResult;
+      try {
+        result = await this.transport.sendMail({
+          ...message,
+          to: normalizedRecipients,
+          ...(normalizedBccRecipients.length > 0 ? { bcc: normalizedBccRecipients } : {}),
+        });
+      } catch (error) {
+        const diagnostic = smtpFailureDiagnostic(error);
+        this.error("Invio email raggruppato non riuscito.", {
+          event: "mail.delivery.failed",
+          operationId,
+          messageType,
+          recipientCount: allRecipients.length,
+          succeededCount: 0,
+          failedCount: allRecipients.length,
+          ...diagnostic,
+        });
+        if (diagnostic.authenticationFailure) {
+          this.error("Autenticazione Gmail OAuth 2.0 non riuscita durante l'invio.", {
+            event: "mail.smtp.authentication.failed",
+            operationId,
+            messageType,
+            source: "delivery",
+            ...diagnostic,
+          });
+        }
+        throw safeSmtpError(error);
+      }
+
+      if (result.rejected.length > 0 || result.accepted.length < allRecipients.length) {
+        this.error("Gmail SMTP non ha accettato tutti i destinatari del messaggio raggruppato.", {
+          event: "mail.delivery.failed",
+          operationId,
+          messageType,
+          recipientCount: allRecipients.length,
+          succeededCount: result.accepted.length,
+          failedCount: Math.max(result.rejected.length, allRecipients.length - result.accepted.length),
+          reasonCode: "SMTP_RECIPIENT_REJECTED",
+        });
+        throw new Error("Gmail non ha accettato tutti i destinatari del messaggio.");
+      }
+
+      this.info("Autenticazione Gmail OAuth 2.0 confermata durante l'invio.", {
+        event: "mail.smtp.authentication.succeeded",
+        operationId,
+        messageType,
+        source: "delivery",
+        evidence: "smtp_message_accepted",
+      });
+      this.info("Invio email completato con successo.", {
+        event: "mail.delivery.succeeded",
+        operationId,
+        messageType,
+        recipientCount: allRecipients.length,
+        succeededCount: allRecipients.length,
+      });
+      return;
+    }
+
     let firstFailure: Error | null = null;
     let firstFailureReasonCode: string | null = null;
     let succeededCount = 0;
@@ -400,7 +494,7 @@ export class GmailSmtpMailProvider implements MailProvider {
         messageType,
         recipient: maskedRecipient,
         recipientIndex: recipientIndex + 1,
-        recipientCount: normalizedRecipients.length,
+        recipientCount: allRecipients.length,
       });
       let result: GmailTransportResult;
       try {
@@ -474,7 +568,7 @@ export class GmailSmtpMailProvider implements MailProvider {
         event: "mail.delivery.failed",
         operationId,
         messageType,
-        recipientCount: normalizedRecipients.length,
+        recipientCount: allRecipients.length,
         succeededCount,
         failedCount,
         reasonCode: firstFailureReasonCode ?? "UNKNOWN_SMTP_FAILURE",
@@ -565,8 +659,16 @@ function createGmailTransport(options: GmailSmtpMailProviderOptions): GmailMailT
 }
 
 function normalizeRecipients(recipients: string[]): string[] {
+  const normalized = normalizeOptionalRecipients(recipients);
+  if (normalized.length === 0) {
+    throw new Error("Il messaggio contiene destinatari non validi.");
+  }
+  return normalized;
+}
+
+function normalizeOptionalRecipients(recipients: string[]): string[] {
   const normalized = [...new Set(recipients.map((recipient) => recipient.trim().toLowerCase()))];
-  if (normalized.length === 0 || normalized.some((recipient) => !z.email().safeParse(recipient).success)) {
+  if (normalized.some((recipient) => !z.email().safeParse(recipient).success)) {
     throw new Error("Il messaggio contiene destinatari non validi.");
   }
   return normalized;

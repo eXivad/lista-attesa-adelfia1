@@ -64,7 +64,10 @@ function createPrismaDouble() {
       upsert: vi.fn(async () => ({ lastValue: 123 })),
     },
     mailingRecipient: {
-      findMany: vi.fn(async () => [{ email: "capigruppo@example.it" }]),
+      findMany: vi.fn(async () => [
+        { email: "capigruppo@example.it" },
+        { email: "ANNA@example.it" },
+      ]),
     },
     waitingListEntry: {
       create: vi.fn(async () => ({ id: "entry-id" })),
@@ -135,7 +138,8 @@ describe("PrismaApplicantRegistrationRepository", () => {
       registrationNumber: "LA-2026-000123",
       status: "IN_ATTESA",
       outboxId: "outbox-id",
-      recipients: ["anna@example.it", "luigi@example.it", "capigruppo@example.it"],
+      recipients: ["anna@example.it", "luigi@example.it"],
+      bccRecipients: ["capigruppo@example.it"],
     });
   });
 
