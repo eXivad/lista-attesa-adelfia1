@@ -196,6 +196,7 @@ describe("GmailSmtpMailProvider", () => {
       applicantName: "Mario Rossi",
       registrationNumber: "LA-2026-000123",
       recipients: ["anna@example.it", "luigi@example.it"],
+      bccRecipients: ["capi@example.it"],
     };
     await provider.sendAcceptanceConfirmation(status);
     await provider.sendRejectionConfirmation(status);
@@ -213,11 +214,18 @@ describe("GmailSmtpMailProvider", () => {
     });
     await provider.sendDiagnosticMessage("anna@example.it");
 
-    expect(transport.sendMail).toHaveBeenCalledTimes(7);
-    expect(vi.mocked(transport.sendMail).mock.calls.map(([message]) => message.subject)).toEqual([
+    expect(transport.sendMail).toHaveBeenCalledTimes(5);
+    const messages = vi.mocked(transport.sendMail).mock.calls.map(([message]) => message);
+    expect(messages[0]).toEqual(expect.objectContaining({
+      to: ["anna@example.it", "luigi@example.it"],
+      bcc: ["capi@example.it"],
+    }));
+    expect(messages[1]).toEqual(expect.objectContaining({
+      to: ["anna@example.it", "luigi@example.it"],
+      bcc: ["capi@example.it"],
+    }));
+    expect(messages.map((message) => message.subject)).toEqual([
       "Esito iscrizione LA-2026-000123: accettata",
-      "Esito iscrizione LA-2026-000123: accettata",
-      "Esito iscrizione LA-2026-000123",
       "Esito iscrizione LA-2026-000123",
       "Invito alla gestione della lista d'attesa - AGESCI Adelfia 1",
       "Reimposta la password - AGESCI Adelfia 1",
@@ -428,38 +436,6 @@ describe("GmailSmtpMailProvider", () => {
     );
     expect(JSON.stringify(logger.error.mock.calls)).not.toContain("anna@example.it");
     expect(JSON.stringify(logger.error.mock.calls)).not.toContain("token-segreto");
-  });
-
-  it("tenta tutti i destinatari anche quando un singolo invio SMTP fallisce", async () => {
-    const transport: GmailMailTransport = {
-      sendMail: vi.fn(async (message) => {
-        if (message.to === "anna@example.it") throw { code: "EUNKNOWN" };
-        return { accepted: ["luigi@example.it"], rejected: [] };
-      }),
-      verify: vi.fn(async () => true as const),
-      close: vi.fn(),
-    };
-    const { provider, logger } = setup({ transport });
-
-    await expect(provider.sendAcceptanceConfirmation({
-      applicantName: "Mario Rossi",
-      registrationNumber: "LA-2026-000123",
-      recipients: ["anna@example.it", "luigi@example.it"],
-    })).rejects.toThrow("Invio tramite Gmail SMTP non riuscito");
-    expect(transport.sendMail).toHaveBeenCalledTimes(2);
-    expect(logger.error).toHaveBeenCalledWith(
-      "Invio al destinatario non riuscito.",
-      expect.objectContaining({
-        event: "mail.delivery.recipient.failed",
-        messageType: "acceptance_confirmation",
-        operationId: "mail-operation-test",
-        reasonCode: "UNKNOWN_SMTP_FAILURE",
-        recipient: "a***@example.it",
-      }),
-    );
-    const serializedLogs = JSON.stringify(logger.error.mock.calls);
-    expect(serializedLogs).not.toContain("anna@example.it");
-    expect(serializedLogs).not.toContain("Mario Rossi");
   });
 
   it("sanitizza errori OAuth, quota, temporanei e sconosciuti", async () => {
