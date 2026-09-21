@@ -138,6 +138,33 @@ describe("template email Gmail", () => {
     expect(message.html).toContain(
       ".email-content{background:#1c1917!important;color:#f5f5f4!important}",
     );
-    expect(message.html).toContain(".email-logo{background:#ffffff!important}");
+    expect(message.html).toContain(".email-logo{background:#fafaf9!important}");
+  });
+
+  it("protegge soltanto intestazione e pulsanti dalla full inversion di Gmail iOS", () => {
+    const message = diagnosticMail(options);
+
+    expect(message.html).toContain("<!DOCTYPE html>");
+    expect(message.html).toContain('<body class="email-body"');
+    expect(message.html).toContain(
+      "u + .email-body .gmail-blend-screen{background:#000000;mix-blend-mode:screen}",
+    );
+    expect(message.html).toContain(
+      "u + .email-body .gmail-blend-difference{background:#000000;mix-blend-mode:difference}",
+    );
+    expect(message.html).toContain('class="email-header" bgcolor="#4c1d95"');
+    expect(message.html).toContain(
+      "background-image:linear-gradient(#4c1d95,#4c1d95)",
+    );
+    expect(message.html.match(/class="gmail-blend-screen"/g)).toHaveLength(1);
+    expect(message.html.match(/class="gmail-blend-difference"/g)).toHaveLength(1);
+    expect(message.html).toContain('class="email-content" bgcolor="#fafaf9"');
+    expect(message.html).toContain(
+      'class="email-heading" style="margin:0 0 24px;color:#292524',
+    );
+    expect(message.html).toContain(
+      "background-image:linear-gradient(#fafaf9,#fafaf9)",
+    );
+    expect(message.html).not.toContain("@media only screen and (max-width:");
   });
 });
