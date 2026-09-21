@@ -137,14 +137,20 @@ export class GmailSmtpMailProvider implements MailProvider {
   }
 
   sendAcceptanceConfirmation(input: StatusMailInput): Promise<void> {
-    return this.renderAndSend("acceptance_confirmation", input.recipients, (options) =>
-      acceptanceConfirmationMail(input, options),
+    return this.renderAndSendGrouped(
+      "acceptance_confirmation",
+      input.recipients,
+      input.bccRecipients,
+      (options) => acceptanceConfirmationMail(input, options),
     );
   }
 
   sendRejectionConfirmation(input: StatusMailInput): Promise<void> {
-    return this.renderAndSend("rejection_confirmation", input.recipients, (options) =>
-      rejectionConfirmationMail(input, options),
+    return this.renderAndSendGrouped(
+      "rejection_confirmation",
+      input.recipients,
+      input.bccRecipients,
+      (options) => rejectionConfirmationMail(input, options),
     );
   }
 

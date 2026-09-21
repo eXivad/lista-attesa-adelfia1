@@ -10,6 +10,7 @@ export interface StatusMailInput {
   applicantName: string;
   registrationNumber: string;
   recipients: string[];
+  bccRecipients: string[];
 }
 
 export interface StaffInvitationMailInput {

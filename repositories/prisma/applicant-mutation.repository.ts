@@ -148,17 +148,18 @@ export class PrismaApplicantMutationRepository implements ApplicantMutationRepos
         orderBy: { email: "asc" },
         select: { email: true },
       });
-      const recipients = uniqueEmails([
-        ...applicant.guardians.map(({ email }) => email),
-        ...internalRecipients.map(({ email }) => email),
-      ]);
+      const recipients = uniqueEmails(applicant.guardians.map(({ email }) => email));
+      const recipientSet = new Set(recipients);
+      const bccRecipients = uniqueEmails(internalRecipients.map(({ email }) => email))
+        .filter((email) => !recipientSet.has(email));
+      const allRecipients = [...recipients, ...bccRecipients];
 
       const outboxId = this.createId(command.changedAt.getTime());
       await transaction.mailOutbox.create({
         data: {
           id: outboxId,
           type: command.to === "ACCETTATO" ? "ACCEPTANCE_CONFIRMATION" : "REJECTION_CONFIRMATION",
-          recipients,
+          recipients: allRecipients,
           payload: {
             applicantName: `${applicant.firstName} ${applicant.lastName}`,
             registrationNumber: applicant.registrationNumber,
@@ -168,7 +169,7 @@ export class PrismaApplicantMutationRepository implements ApplicantMutationRepos
         },
       });
 
-      return { changed: true as const, outboxId, recipients };
+      return { changed: true as const, outboxId, recipients, bccRecipients };
     });
   }
 
