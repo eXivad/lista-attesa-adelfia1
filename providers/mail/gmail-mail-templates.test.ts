@@ -33,7 +33,7 @@ describe("template email Gmail", () => {
       "Mario <script>alert('x')</script> Rossi, nato/a il 12 maggio 2018",
     );
     expect(message.text).toContain(
-      "La richiesta sarà presa in carico dagli incaricati del Gruppo e sarà valutata in base all’anno di nascita del minore, all’ordine cronologico di ricezione e alla disponibilità di posti nella branca di riferimento.",
+      "La richiesta sarà presa in carico dalla Comunità Capi e dalle singole Staff e sarà valutata in base all’anno di nascita del minore, all’ordine cronologico di ricezione e alla disponibilità di posti nella branca di riferimento.",
     );
     expect(message.text).toContain(
       "Vi ricordiamo che la compilazione del modulo non comporta l’iscrizione automatica ad AGESCI e non garantisce la disponibilità di un posto.",
@@ -81,7 +81,12 @@ describe("template email Gmail", () => {
       expect(message.text).toContain("Cordiali saluti,\nAGESCI Adelfia 1");
       expect(message.html).toContain("Cordiali saluti,<br><strong>AGESCI Adelfia 1</strong>");
     }
-    expect(messages[1].html).toContain("<strong>LA-2026-000123</strong>");
+    expect(messages[1].html).toContain(
+      "<strong>accettazione del posto proposto </strong>",
+    );
+    expect(messages[1].html).toContain(
+      "<strong>Mario &lt;script&gt;alert(&#39;x&#39;)&lt;/script&gt; Rossi</strong>",
+    );
     expect(messages[3].html).toContain("<strong>Capo Uno</strong>");
     expect(messages[3].html).toContain("<strong>5 settembre 2026 alle ore 20:00</strong>");
     expect(messages[3].text).toContain("https://app.example.it/invito/token");
@@ -116,5 +121,21 @@ describe("template email Gmail", () => {
     expect(message.subject).toContain("Test configurazione email");
     expect(message.text).toContain("SPF, DKIM e DMARC");
     expect(message.html).not.toContain("<img");
+  });
+
+  it("dichiara e applica una palette scura controllata senza invertire i colori del logo", () => {
+    const message = registrationConfirmationMail(registration, options);
+
+    expect(message.html).toContain(
+      '<meta name="color-scheme" content="light dark">',
+    );
+    expect(message.html).toContain(
+      '<meta name="supported-color-schemes" content="light dark">',
+    );
+    expect(message.html).toContain("@media (prefers-color-scheme: dark)");
+    expect(message.html).toContain(".email-page{background:#111827!important}");
+    expect(message.html).toContain(".email-card{background:#1c1917!important}");
+    expect(message.html).toContain(".email-content{color:#f5f5f4!important}");
+    expect(message.html).toContain(".email-logo{background:#ffffff!important}");
   });
 });
