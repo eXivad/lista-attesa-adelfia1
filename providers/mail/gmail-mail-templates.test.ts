@@ -93,6 +93,21 @@ describe("template email Gmail", () => {
     expect(messages[4].html).toContain("https://app.example.it/reset/token");
   });
 
+  it("usa il nome dinamico del Gruppo anche nel testo dell'accettazione", () => {
+    const message = acceptanceConfirmationMail(registration, {
+      ...options,
+      organizationName: "AGESCI Bari 42",
+    });
+
+    expect(message.text).toContain(
+      "presso il Gruppo Scout AGESCI Bari 42.",
+    );
+    expect(message.html).toContain(
+      "presso il Gruppo Scout <strong>AGESCI Bari 42</strong>.",
+    );
+    expect(message.text).not.toContain("Gruppo Scout AGESCI Adelfia 1");
+  });
+
   it("consente HTTP soltanto per lo sviluppo locale e rifiuta URL con credenziali", () => {
     expect(() => staffInvitationMail({
       recipient: "capo@example.it",
@@ -132,13 +147,22 @@ describe("template email Gmail", () => {
     expect(message.html).toContain(
       '<meta name="supported-color-schemes" content="light dark">',
     );
-    expect(message.html).toContain("@media (prefers-color-scheme: dark)");
-    expect(message.html).toContain(".email-page{background:#111827!important}");
-    expect(message.html).toContain(".email-card{background:#1c1917!important}");
+    expect(message.html).toContain("@media (prefers-color-scheme:dark)");
     expect(message.html).toContain(
-      ".email-content{background:#1c1917!important;color:#f5f5f4!important}",
+      ".email-body,.email-page{background-color:#111827!important}",
     );
-    expect(message.html).toContain(".email-logo{background:#fafaf9!important}");
+    expect(message.html).toContain(
+      ".email-card,.email-content{background-color:#1c1917!important}",
+    );
+    expect(message.html).toContain(
+      ".email-content,.email-heading,.email-copy{color:#f5f5f4!important}",
+    );
+    expect(message.html).toContain(
+      ".email-logo{background-color:#fafaf9!important;background-image:linear-gradient(#fafaf9,#fafaf9)!important}",
+    );
+    expect(message.html).toContain(
+      "[data-ogsc] .email-card,[data-ogsc] .email-content{background-color:#1c1917!important}",
+    );
   });
 
   it("protegge soltanto intestazione e pulsanti dalla full inversion di Gmail iOS", () => {
@@ -179,7 +203,16 @@ describe("template email Gmail", () => {
     expect(message.html.match(/class="gmail-blend-screen"/g)).toHaveLength(2);
     expect(message.html.match(/class="gmail-blend-difference"/g)).toHaveLength(2);
     expect(message.html).toContain(
-      "background:#4c1d95;background-image:linear-gradient(#4c1d95,#4c1d95);color:#ffffff",
+      '<td class="email-button-cell" bgcolor="#4c1d95"',
+    );
+    expect(message.html).toContain(
+      "background-color:#4c1d95;background-image:linear-gradient(#4c1d95,#4c1d95);border-radius:8px",
+    );
+    expect(message.html).toContain(
+      '<a class="email-button" href="https://app.example.it/invito/token" style="display:block;color:#ffffff',
+    );
+    expect(message.html).toContain(
+      '<a class="email-link" href="https://app.example.it/invito/token" style="color:#4c1d95',
     );
   });
 });
