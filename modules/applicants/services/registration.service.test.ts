@@ -27,7 +27,8 @@ function createDependencies(overrides: Partial<ApplicantRegistrationRepository> 
       registrationNumber: "LA-2026-000123",
       status: command.status,
       outboxId: "mail-1",
-      recipients: ["anna@example.it", "luigi@example.it", "capi@example.it"],
+      recipients: ["anna@example.it", "luigi@example.it"],
+      bccRecipients: ["capi@example.it"],
     })),
     markMailDelivered: vi.fn(async () => undefined),
     markMailFailed: vi.fn(async () => undefined),
@@ -80,7 +81,8 @@ describe("ApplicantRegistrationService", () => {
       applicantName: "Mario Rossi",
       applicantBirthDate: new Date("2018-05-12T00:00:00.000Z"),
       registrationNumber: "LA-2026-000123",
-      recipients: ["anna@example.it", "luigi@example.it", "capi@example.it"],
+      recipients: ["anna@example.it", "luigi@example.it"],
+      bccRecipients: ["capi@example.it"],
     });
     expect(repository.markMailDelivered).toHaveBeenCalledWith("mail-1", NOW);
   });

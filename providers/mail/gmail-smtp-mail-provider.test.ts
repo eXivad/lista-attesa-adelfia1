@@ -24,7 +24,7 @@ function createLogger() {
 function setup(overrides: Partial<GmailSmtpMailProviderOptions> = {}) {
   const transport: GmailMailTransport = {
     sendMail: vi.fn(async () => ({
-      accepted: ["anna@example.it", "luigi@example.it"],
+      accepted: ["anna@example.it", "luigi@example.it", "capi@example.it"],
       rejected: [],
     })),
     verify: vi.fn(async () => true as const),
@@ -61,7 +61,7 @@ function setup(overrides: Partial<GmailSmtpMailProviderOptions> = {}) {
 }
 
 describe("GmailSmtpMailProvider", () => {
-  it("invia un messaggio distinto per destinatario con To visibile e priorit\u00e0 neutra", async () => {
+  it("invia una sola conferma con i genitori in To e la mailing list nascosta in Bcc", async () => {
     const { provider, quotaGuard, transport, logger } = setup();
 
     await provider.sendRegistrationConfirmation({
@@ -69,23 +69,21 @@ describe("GmailSmtpMailProvider", () => {
       applicantBirthDate: new Date("2018-05-12T00:00:00.000Z"),
       registrationNumber: "LA-2026-000123",
       recipients: ["Anna@example.it", "anna@example.it", "luigi@example.it"],
+      bccRecipients: ["capi@example.it", "ANNA@example.it"],
     });
 
     expect(quotaGuard.reserve).toHaveBeenCalledWith({
       sender: "gruppo@gmail.com",
-      recipientCount: 2,
+      recipientCount: 3,
       limit: 450,
       now: NOW,
     });
-    expect(transport.sendMail).toHaveBeenCalledTimes(2);
-    const messages = vi.mocked(transport.sendMail).mock.calls.map(([message]) => message);
-    expect(messages.map((message) => message.to)).toEqual([
-      "anna@example.it",
-      "luigi@example.it",
-    ]);
-    expect(messages.every((message) => message.bcc === undefined)).toBe(true);
-    expect(messages.every((message) => message.priority === undefined)).toBe(true);
-    expect(messages[0]).toEqual(expect.objectContaining({
+    expect(transport.sendMail).toHaveBeenCalledOnce();
+    const message = vi.mocked(transport.sendMail).mock.calls[0][0];
+    expect(message.to).toEqual(["anna@example.it", "luigi@example.it"]);
+    expect(message.bcc).toEqual(["capi@example.it"]);
+    expect(message.priority).toBeUndefined();
+    expect(message).toEqual(expect.objectContaining({
       from: { name: "AGESCI Adelfia 1", address: "gruppo@gmail.com" },
       replyTo: "gruppo@gmail.com",
       subject: "Conferma iscrizione lista d'attesa - LA-2026-000123",
@@ -112,8 +110,8 @@ describe("GmailSmtpMailProvider", () => {
         event: "mail.delivery.succeeded",
         operationId: "mail-operation-test",
         messageType: "registration_confirmation",
-        recipientCount: 2,
-        succeededCount: 2,
+        recipientCount: 3,
+        succeededCount: 3,
       }),
     );
     expect(logger.info).toHaveBeenCalledWith(
@@ -126,8 +124,10 @@ describe("GmailSmtpMailProvider", () => {
     );
     const serializedLogs = JSON.stringify(logger.info.mock.calls);
     expect(serializedLogs).toContain("a***@example.it");
+    expect(serializedLogs).toContain("c***@example.it");
     expect(serializedLogs).not.toContain("anna@example.it");
     expect(serializedLogs).not.toContain("luigi@example.it");
+    expect(serializedLogs).not.toContain("capi@example.it");
   });
 
   it("ottimizza il logo prima di incorporarlo nel messaggio", async () => {
@@ -374,11 +374,12 @@ describe("GmailSmtpMailProvider", () => {
     );
   });
 
-  it("considera fallito un invio accettato solo parzialmente", async () => {
+  it("considera fallita una conferma accettata solo parzialmente", async () => {
     const transport: GmailMailTransport = {
-      sendMail: vi.fn(async (message) => message.to === "anna@example.it"
-        ? { accepted: ["anna@example.it"], rejected: [] }
-        : { accepted: [], rejected: ["luigi@example.it"] }),
+      sendMail: vi.fn(async () => ({
+        accepted: ["anna@example.it", "luigi@example.it"],
+        rejected: ["capi@example.it"],
+      })),
       verify: vi.fn(async () => true as const),
       close: vi.fn(),
     };
@@ -388,8 +389,9 @@ describe("GmailSmtpMailProvider", () => {
       applicantBirthDate: new Date("2018-05-12T00:00:00.000Z"),
       registrationNumber: "LA-2026-000123",
       recipients: ["anna@example.it", "luigi@example.it"],
+      bccRecipients: ["capi@example.it"],
     })).rejects.toThrow("non ha accettato tutti");
-    expect(transport.sendMail).toHaveBeenCalledTimes(2);
+    expect(transport.sendMail).toHaveBeenCalledOnce();
   });
 
   it("tenta tutti i destinatari anche quando un singolo invio SMTP fallisce", async () => {
@@ -403,9 +405,8 @@ describe("GmailSmtpMailProvider", () => {
     };
     const { provider, logger } = setup({ transport });
 
-    await expect(provider.sendRegistrationConfirmation({
+    await expect(provider.sendAcceptanceConfirmation({
       applicantName: "Mario Rossi",
-      applicantBirthDate: new Date("2018-05-12T00:00:00.000Z"),
       registrationNumber: "LA-2026-000123",
       recipients: ["anna@example.it", "luigi@example.it"],
     })).rejects.toThrow("Invio tramite Gmail SMTP non riuscito");
@@ -414,7 +415,7 @@ describe("GmailSmtpMailProvider", () => {
       "Invio al destinatario non riuscito.",
       expect.objectContaining({
         event: "mail.delivery.recipient.failed",
-        messageType: "registration_confirmation",
+        messageType: "acceptance_confirmation",
         operationId: "mail-operation-test",
         reasonCode: "UNKNOWN_SMTP_FAILURE",
         recipient: "a***@example.it",
