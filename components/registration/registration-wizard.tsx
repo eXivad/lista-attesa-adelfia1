@@ -144,6 +144,9 @@ export function RegistrationWizard({ privacyPolicy, submitAction }: Registration
             <p className="max-w-lg text-stone-600">
               Conserva il numero della pratica: potrà essere utilizzato per richiedere assistenza al Gruppo.
             </p>
+            <p className="max-w-lg text-stone-600">
+              Riceverai un’email a breve agli indirizzi indicati nel modulo. 📩 Se non la trovi, controlla anche la cartella Spam o Posta indesiderata.
+            </p>
           </div>
           <strong className="rounded-2xl bg-violet-50 px-6 py-4 font-mono text-xl tracking-wide text-violet-950">
             {result.registrationNumber}
