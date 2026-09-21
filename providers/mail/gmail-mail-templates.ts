@@ -198,7 +198,7 @@ function transactionalMail(input: TransactionalMailInput): MailContent {
     )
     .join("");
   const action = input.action
-    ? `<p style="margin:24px 0"><a class="email-button" href="${escapeHtml(input.action.url)}" style="display:inline-block;background:#5b21b6;color:#ffffff;text-decoration:none;padding:12px 18px;border-radius:8px;font-weight:700">${escapeHtml(input.action.label)}</a></p><p class="email-muted" style="margin:0 0 16px;font-size:13px;color:#57534e;line-height:1.5;word-break:break-all">Se il pulsante non funziona, copia questo indirizzo nel browser:<br>${escapeHtml(input.action.url)}</p>`
+    ? `<p style="margin:24px 0"><a class="email-button" href="${escapeHtml(input.action.url)}" style="display:inline-block;background:#4c1d95;background-image:linear-gradient(#4c1d95,#4c1d95);color:#ffffff;text-decoration:none;padding:12px 18px;border-radius:8px;font-weight:700">${protectGmailWhiteLabel(escapeHtml(input.action.label))}</a></p><p class="email-muted" style="margin:0 0 16px;font-size:13px;color:#57534e;line-height:1.5;word-break:break-all">Se il pulsante non funziona, copia questo indirizzo nel browser:<br>${escapeHtml(input.action.url)}</p>`
     : "";
   const logo = input.logoCid
   ? `
@@ -212,9 +212,10 @@ function transactionalMail(input: TransactionalMailInput): MailContent {
       >
         <tr>
           <td class="email-logo"
-            bgcolor="#ffffff"
+            bgcolor="#fafaf9"
             style="
-              background:#ffffff;
+              background:#fafaf9;
+              background-image:linear-gradient(#fafaf9,#fafaf9);
               padding:8px;
               border-radius:10px;
             "
@@ -237,16 +238,38 @@ function transactionalMail(input: TransactionalMailInput): MailContent {
     </td>
   `
   : "";
+  const headerText = protectGmailWhiteText(
+    `<div class="email-kicker" style="font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#ddd6fe">Lista d’Attesa - AGESCI</div><div class="email-group" style="margin-top:5px;font-size:19px;font-weight:700;line-height:1.3;color:#ffffff">${escapeHtml(input.organizationName)}</div>`,
+  );
+  const heading = `<h1 class="email-heading" style="margin:0 0 24px;color:#292524;font-size:24px;line-height:1.25">${escapeHtml(input.heading)}</h1>`;
+  const signOff = `<p class="email-copy" style="margin:28px 0 0;line-height:1.55;color:#292524">Cordiali saluti,<br><strong>${escapeHtml(input.organizationName)}</strong></p>`;
+  const footer = `<p class="email-muted" style="margin:24px 0 0;padding-top:20px;border-top:1px solid #e7e5e4;font-size:13px;line-height:1.5;color:#57534e">Messaggio automatico inviato da ${escapeHtml(input.organizationName)}.</p>`;
 
   return {
     subject: input.subject,
     text: textLines.join("\n").trim(),
-    html: `<!doctype html><html lang="it" style="color-scheme:light dark;supported-color-schemes:light dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><meta name="supported-color-schemes" content="light dark">${emailColorSchemeStyles()}</head><body class="email-page" bgcolor="#f5f5f4" style="margin:0;background:#f5f5f4;color:#292524;font-family:Arial,sans-serif"><table class="email-page" role="presentation" width="100%" cellspacing="0" cellpadding="0" bgcolor="#f5f5f4" style="width:100%;background:#f5f5f4"><tr><td align="center" style="padding:24px 12px"><table class="email-card" role="presentation" width="100%" cellspacing="0" cellpadding="0" bgcolor="#ffffff" style="width:100%;max-width:600px;background:#ffffff;border-radius:12px;overflow:hidden"><tr><td class="email-header" bgcolor="#4c1d95" style="padding:24px 32px;background:#4c1d95;color:#ffffff"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr>${logo}<td valign="middle"><div class="email-kicker" style="font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#ddd6fe">Lista d’Attesa - AGESCI</div><div class="email-group" style="margin-top:5px;font-size:19px;font-weight:700;line-height:1.3;color:#ffffff">${escapeHtml(input.organizationName)}</div></td></tr></table></td></tr><tr><td class="email-content" bgcolor="#ffffff" style="padding:32px;background:#ffffff;color:#292524"><h1 class="email-heading" style="margin:0 0 24px;color:#4c1d95;font-size:24px;line-height:1.25">${escapeHtml(input.heading)}</h1>${paragraphs}${action}<p class="email-copy" style="margin:28px 0 0;line-height:1.55;color:#292524">Cordiali saluti,<br><strong>${escapeHtml(input.organizationName)}</strong></p><p class="email-muted" style="margin:24px 0 0;padding-top:20px;border-top:1px solid #e7e5e4;font-size:13px;line-height:1.5;color:#57534e">Messaggio automatico inviato da ${escapeHtml(input.organizationName)}.</p></td></tr></table></td></tr></table></body></html>`,
+    html: `<!DOCTYPE html><html lang="it" style="color-scheme:light dark;supported-color-schemes:light dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><meta name="supported-color-schemes" content="light dark">${emailColorSchemeStyles()}</head><body class="email-body" bgcolor="#f5f5f4" style="margin:0;background:#f5f5f4;color:#292524;font-family:Arial,sans-serif"><table class="email-page" role="presentation" width="100%" cellspacing="0" cellpadding="0" bgcolor="#f5f5f4" style="width:100%;background:#f5f5f4"><tr><td align="center" style="padding:24px 12px"><table class="email-card" role="presentation" width="100%" cellspacing="0" cellpadding="0" bgcolor="#fafaf9" style="width:100%;max-width:600px;background:#fafaf9;border-radius:12px;overflow:hidden"><tr><td class="email-header" bgcolor="#4c1d95" style="padding:24px 32px;background:#4c1d95;background-image:linear-gradient(#4c1d95,#4c1d95);color:#ffffff"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr>${logo}<td valign="middle">${headerText}</td></tr></table></td></tr><tr><td class="email-content" bgcolor="#fafaf9" style="padding:32px;background:#fafaf9;color:#292524">${heading}${paragraphs}${action}${signOff}${footer}</td></tr></table></td></tr></table></body></html>`,
   };
 }
 
 function emailColorSchemeStyles(): string {
-  return `<style>:root{color-scheme:light dark;supported-color-schemes:light dark}@media (prefers-color-scheme: dark){.email-page{background:#111827!important}.email-card{background:#1c1917!important}.email-content{background:#1c1917!important;color:#f5f5f4!important}.email-copy{color:#f5f5f4!important}.email-header{background:#4c1d95!important;color:#ffffff!important}.email-heading,.email-link{color:#c4b5fd!important}.email-kicker{color:#ddd6fe!important}.email-group{color:#ffffff!important}.email-muted{color:#d6d3d1!important;border-top-color:#57534e!important}.email-button{background:#7c3aed!important;color:#ffffff!important}.email-logo{background:#ffffff!important}}[data-ogsc] .email-page{background:#111827!important}[data-ogsc] .email-card,[data-ogsc] .email-content{background:#1c1917!important}[data-ogsc] .email-content,[data-ogsc] .email-copy{color:#f5f5f4!important}[data-ogsc] .email-header{background:#4c1d95!important;color:#ffffff!important}[data-ogsc] .email-heading,[data-ogsc] .email-link{color:#c4b5fd!important}[data-ogsc] .email-muted{color:#d6d3d1!important;border-top-color:#57534e!important}[data-ogsc] .email-logo{background:#ffffff!important}</style>`;
+  return [
+    "<style>",
+    ":root{color-scheme:light dark;supported-color-schemes:light dark}",
+    "u + .email-body .gmail-blend-screen{background:#000000;mix-blend-mode:screen}",
+    "u + .email-body .gmail-blend-difference{background:#000000;mix-blend-mode:difference}",
+    "@media (prefers-color-scheme: dark){.email-body,.email-page{background:#111827!important}.email-card{background:#1c1917!important}.email-header{background:#4c1d95!important;background-image:linear-gradient(#4c1d95,#4c1d95)!important;color:#ffffff!important}.email-content{background:#1c1917!important;color:#f5f5f4!important}.email-heading,.email-copy{color:#f5f5f4!important}.email-link{color:#c4b5fd!important}.email-kicker{color:#ddd6fe!important}.email-muted{color:#d6d3d1!important;border-top-color:#57534e!important}.email-group{color:#ffffff!important}.email-button{background:#4c1d95!important;background-image:linear-gradient(#4c1d95,#4c1d95)!important;color:#ffffff!important}.email-logo{background:#fafaf9!important}}",
+    "[data-ogsc] .email-body,[data-ogsc] .email-page{background:#111827!important}[data-ogsc] .email-card,[data-ogsc] .email-content{background:#1c1917!important}[data-ogsc] .email-header{background:#4c1d95!important;color:#ffffff!important}[data-ogsc] .email-content,[data-ogsc] .email-heading,[data-ogsc] .email-copy{color:#f5f5f4!important}[data-ogsc] .email-link{color:#c4b5fd!important}[data-ogsc] .email-kicker{color:#ddd6fe!important}[data-ogsc] .email-muted{color:#d6d3d1!important;border-top-color:#57534e!important}[data-ogsc] .email-group{color:#ffffff!important}[data-ogsc] .email-button{background:#4c1d95!important;color:#ffffff!important}[data-ogsc] .email-logo{background:#fafaf9!important}",
+    "</style>",
+  ].join("");
+}
+
+function protectGmailWhiteText(content: string): string {
+  return `<div class="gmail-blend-screen"><div class="gmail-blend-difference">${content}</div></div>`;
+}
+
+function protectGmailWhiteLabel(content: string): string {
+  return `<span class="gmail-blend-screen" style="display:block"><span class="gmail-blend-difference" style="display:block">${content}</span></span>`;
 }
 
 function strong(text: string): MailFragment {
@@ -268,7 +291,7 @@ function renderHtml(paragraph: MailParagraph): string {
       const escapedText = escapeHtml(fragment.text);
       const content = fragment.strong ? `<strong>${escapedText}</strong>` : escapedText;
       return fragment.href
-        ? `<a class="email-link" href="${escapeHtml(fragment.href)}" style="color:#5b21b6;text-decoration:underline">${content}</a>`
+        ? `<a class="email-link" href="${escapeHtml(fragment.href)}" style="color:#292524;text-decoration:underline">${content}</a>`
         : content;
     })
     .join("");

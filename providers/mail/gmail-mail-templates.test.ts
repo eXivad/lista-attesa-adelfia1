@@ -167,4 +167,19 @@ describe("template email Gmail", () => {
     );
     expect(message.html).not.toContain("@media only screen and (max-width:");
   });
+
+  it("protegge il testo bianco del pulsante senza bloccare il resto del contenuto", () => {
+    const message = staffInvitationMail({
+      recipient: "capo@example.it",
+      staffName: "Capo Uno",
+      invitationUrl: "https://app.example.it/invito/token",
+      expiresAt: new Date("2026-09-05T18:00:00Z"),
+    }, options);
+
+    expect(message.html.match(/class="gmail-blend-screen"/g)).toHaveLength(2);
+    expect(message.html.match(/class="gmail-blend-difference"/g)).toHaveLength(2);
+    expect(message.html).toContain(
+      "background:#4c1d95;background-image:linear-gradient(#4c1d95,#4c1d95);color:#ffffff",
+    );
+  });
 });
