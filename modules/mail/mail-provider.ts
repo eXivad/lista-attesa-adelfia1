@@ -3,6 +3,7 @@ export interface RegistrationMailInput {
   applicantBirthDate: Date;
   registrationNumber: string;
   recipients: string[];
+  bccRecipients: string[];
 }
 
 export interface StatusMailInput {

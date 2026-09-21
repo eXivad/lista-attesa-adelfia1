@@ -344,6 +344,7 @@ describe("GmailSmtpMailProvider", () => {
       applicantBirthDate: new Date("2018-05-12T00:00:00.000Z"),
       registrationNumber: "LA-2026-000123",
       recipients: ["anna@example.it", "luigi@example.it"],
+      bccRecipients: [],
     })).rejects.toThrow("limite prudenziale");
     expect(quotaGuard.reserve).not.toHaveBeenCalled();
     expect(transport.sendMail).not.toHaveBeenCalled();

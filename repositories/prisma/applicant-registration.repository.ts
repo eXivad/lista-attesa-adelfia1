@@ -79,10 +79,11 @@ export class PrismaApplicantRegistrationRepository implements ApplicantRegistrat
           orderBy: { email: "asc" },
           select: { email: true },
         });
-        const recipients = uniqueEmails([
-          ...command.guardians.map(({ email }) => email),
-          ...internalRecipients.map(({ email }) => email),
-        ]);
+        const recipients = uniqueEmails(command.guardians.map(({ email }) => email));
+        const recipientSet = new Set(recipients);
+        const bccRecipients = uniqueEmails(internalRecipients.map(({ email }) => email))
+          .filter((email) => !recipientSet.has(email));
+        const allRecipients = [...recipients, ...bccRecipients];
 
         await transaction.waitingListEntry.create({
           data: {
@@ -144,7 +145,7 @@ export class PrismaApplicantRegistrationRepository implements ApplicantRegistrat
               create: {
                 id: outboxId,
                 type: "REGISTRATION_CONFIRMATION",
-                recipients,
+                recipients: allRecipients,
                 payload: {
                   applicantName: `${command.minor.firstName} ${command.minor.lastName}`,
                   applicantBirthDate: command.minor.birthDate.toISOString(),
@@ -163,6 +164,7 @@ export class PrismaApplicantRegistrationRepository implements ApplicantRegistrat
           status: command.status,
           outboxId,
           recipients,
+          bccRecipients,
         };
       });
     } catch (error) {

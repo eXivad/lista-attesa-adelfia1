@@ -66,6 +66,7 @@ export interface ApplicantRegistrationRepository {
     status: ApplicantStatus;
     outboxId: string;
     recipients: string[];
+    bccRecipients: string[];
   }>;
   markMailDelivered(outboxId: string, deliveredAt: Date): Promise<void>;
   markMailFailed(outboxId: string, failedAt: Date, reason: string): Promise<void>;
@@ -147,6 +148,7 @@ export class ApplicantRegistrationService {
         applicantBirthDate: toDate(parsed.data.minor.birthDate),
         registrationNumber: registration.registrationNumber,
         recipients: registration.recipients,
+        bccRecipients: registration.bccRecipients,
       });
       await this.dependencies.repository.markMailDelivered(registration.outboxId, now);
     } catch (error) {

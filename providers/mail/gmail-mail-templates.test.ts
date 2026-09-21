@@ -18,6 +18,7 @@ const registration = {
   applicantBirthDate: new Date("2018-05-12T00:00:00.000Z"),
   registrationNumber: "LA-2026-000123",
   recipients: ["famiglia@example.it"],
+  bccRecipients: [],
 };
 
 describe("template email Gmail", () => {
