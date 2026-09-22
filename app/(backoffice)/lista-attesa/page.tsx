@@ -22,7 +22,6 @@ export default async function ApplicantListPage({ searchParams }: ApplicantListP
   const rawFilters = await searchParams;
   const filters = applicantListQuerySchema.parse(rawFilters);
   const result = await new PrismaApplicantQueryRepository(getPrismaClient()).list(filters);
-  const referenceDate = new Date();
 
   return (
     <div className="space-y-6">
@@ -130,7 +129,11 @@ export default async function ApplicantListPage({ searchParams }: ApplicantListP
         <>
           <div className="grid gap-3 md:hidden">
             {result.items.map((entry) => {
-              const branch = calculateBranch(entry.birthDate, referenceDate, result.branchConfiguration);
+              const branch = calculateBranch(
+                entry.birthYear,
+                result.associativeYearStart,
+                result.branchConfiguration,
+              );
               return (
                 <Card key={entry.id}>
                   <CardContent className="p-5">
@@ -166,7 +169,7 @@ export default async function ApplicantListPage({ searchParams }: ApplicantListP
                     <td className="px-4 py-4 font-bold text-violet-950">{entry.firstName} {entry.lastName}</td>
                     <td className="px-4 py-4 text-stone-700">{entry.birthYear}</td>
                     <td className="px-4 py-4 text-stone-700">{genderLabel(entry.gender)}</td>
-                    <td className="px-4 py-4"><BranchBadge branch={calculateBranch(entry.birthDate, referenceDate, result.branchConfiguration)} /></td>
+                    <td className="px-4 py-4"><BranchBadge branch={calculateBranch(entry.birthYear, result.associativeYearStart, result.branchConfiguration)} /></td>
                     <td className="px-4 py-4 text-stone-700">{formatDateTime(entry.createdAt)}</td>
                     <td className="px-4 py-4"><StatusBadge status={entry.status} /></td>
                     <td className="px-4 py-4 text-right"><Button asChild variant="ghost" size="sm"><Link href={`/iscritti/${entry.id}`}>Dettaglio</Link></Button></td>
