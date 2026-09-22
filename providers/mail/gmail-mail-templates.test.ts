@@ -138,9 +138,9 @@ describe("template email React Email", () => {
     expect(message.html).toContain(
       '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"',
     );
-    expect(message.html).toContain('id="__react-email-preview"');
+    expect(message.html).toContain('data-skip-in-text="true"');
     expect(message.html).toContain('role="presentation"');
-    expect(message.text).not.toContain("__react-email-preview");
+    expect(message.text).not.toContain("Richiesta ricevuta — AGESCI Adelfia 1");
   });
 
   it("dichiara e applica una palette scura controllata senza invertire i colori del logo", async () => {
