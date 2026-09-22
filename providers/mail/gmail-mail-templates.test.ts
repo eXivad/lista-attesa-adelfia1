@@ -147,11 +147,11 @@ describe("template email React Email", () => {
   it("dichiara e applica una palette scura controllata senza invertire i colori del logo", async () => {
     const message = await registrationConfirmationMail(registration, options);
 
-    expect(message.html).toContain(
-      '<meta name="color-scheme" content="light dark">',
+    expect(message.html).toMatch(
+      /<meta name="color-scheme" content="light dark"\s*\/?>/,
     );
-    expect(message.html).toContain(
-      '<meta name="supported-color-schemes" content="light dark">',
+    expect(message.html).toMatch(
+      /<meta name="supported-color-schemes" content="light dark"\s*\/?>/,
     );
     expect(message.html).toContain("@media (prefers-color-scheme:dark)");
     expect(message.html).toContain(
@@ -174,7 +174,9 @@ describe("template email React Email", () => {
   it("protegge soltanto intestazione e pulsanti dalla full inversion di Gmail iOS", async () => {
     const message = await diagnosticMail(options);
 
-    expect(message.html).toContain("<!DOCTYPE html>");
+    expect(message.html).toContain(
+      '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"',
+    );
     expect(message.html).toContain('<body class="email-body"');
     expect(message.html).toContain(
       "u + .email-body .gmail-blend-screen{background:#000000;mix-blend-mode:screen}",

@@ -210,11 +210,11 @@ export class GmailSmtpMailProvider implements MailProvider {
   private async renderAndSend(
     messageType: MailMessageType,
     recipients: string[],
-    render: (options: TemplateOptions) => MailContent,
+    render: (options: TemplateOptions) => Promise<MailContent>,
   ): Promise<void> {
     const operationId = this.createOperationId();
     const branding = await this.loadBranding(operationId, messageType);
-    const content = render({
+    const content = await render({
       organizationName: branding.organizationName,
       ...(branding.logo ? { logoCid: MAIL_LOGO_CID } : {}),
     });
@@ -225,11 +225,11 @@ export class GmailSmtpMailProvider implements MailProvider {
     messageType: MailMessageType,
     recipients: string[],
     bccRecipients: string[],
-    render: (options: TemplateOptions) => MailContent,
+    render: (options: TemplateOptions) => Promise<MailContent>,
   ): Promise<void> {
     const operationId = this.createOperationId();
     const branding = await this.loadBranding(operationId, messageType);
-    const content = render({
+    const content = await render({
       organizationName: branding.organizationName,
       ...(branding.logo ? { logoCid: MAIL_LOGO_CID } : {}),
     });
