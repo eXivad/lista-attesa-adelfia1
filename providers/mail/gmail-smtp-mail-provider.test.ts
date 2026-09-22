@@ -88,7 +88,7 @@ describe("GmailSmtpMailProvider", () => {
       replyTo: "gruppo@gmail.com",
       subject: "Conferma iscrizione lista d'attesa - LA-2026-000123",
       text: expect.stringContaining("Mario Rossi"),
-      html: expect.stringContaining("Richiesta ricevuta"),
+      html: expect.stringMatching(/<!DOCTYPE html PUBLIC[\s\S]+data-skip-in-text="true"[\s\S]+Richiesta ricevuta/),
       attachments: [{
         filename: "logo-gruppo.png",
         content: Buffer.from([0x89, 0x50, 0x4e, 0x47]),

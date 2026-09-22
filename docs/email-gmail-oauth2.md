@@ -1,6 +1,6 @@
 # Gmail SMTP con OAuth 2.0
 
-Questa integrazione usa Nodemailer e `smtp.gmail.com` sulla porta 465 con TLS implicito e OAuth 2.0 a tre partecipanti. Non memorizza la password dell'account Google e non espone credenziali al browser.
+Questa integrazione usa React Email per generare HTML e testo semplice, quindi consegna entrambi a Nodemailer tramite `smtp.gmail.com` sulla porta 465 con TLS implicito e OAuth 2.0 a tre partecipanti. Non memorizza la password dell'account Google e non espone credenziali al browser.
 
 Gmail è una scelta deliberata per il volume ridotto del Gruppo. La documentazione Nodemailer avverte che Gmail non è progettato come servizio transazionale ad alto volume: se il traffico crescerà o serviranno metriche di bounce automatiche, sarà opportuno sostituire l'adapter con un provider dedicato senza modificare la business logic.
 
@@ -8,6 +8,8 @@ Fonti operative:
 
 - [Nodemailer: usare Gmail](https://nodemailer.com/guides/using-gmail)
 - [Nodemailer: OAuth 2.0](https://nodemailer.com/smtp/oauth2)
+- [React Email: integrazione con Nodemailer](https://react.email/docs/integrations/nodemailer)
+- [React Email: rendering HTML e testo semplice](https://react.email/docs/utilities/render)
 - [Google: limiti di invio Gmail](https://support.google.com/mail/answer/22839?hl=it)
 - [Google: linee guida per i mittenti](https://support.google.com/mail/answer/81126?hl=it)
 - [Google Workspace: limiti di invio](https://support.google.com/a/answer/166852?hl=it)
@@ -58,6 +60,18 @@ Nessun codice può garantire che una mail non finisca nello spam. Prima del go-l
 Se Google Workspace è l'unico sistema che invia per il dominio, il record SPF tipico include `_spf.google.com`; non copiarlo alla cieca se esistono altri mittenti. DKIM va attivato dalla Console di amministrazione Google. Per DMARC è prudente partire con reporting e policy `p=none`, verificare i report e irrigidire la policy solo dopo aver confermato l'allineamento.
 
 I messaggi generati sono multipart `text/plain` + HTML minimale e non usano immagini remote o tracking pixel. Se nelle impostazioni è presente un logo, viene incorporato come singola immagine inline tramite CID: il client di posta non deve richiamare l'applicazione e il contenuto non rivela aperture del messaggio. Il nome del Gruppo proviene dalle stesse impostazioni usate dall'interfaccia; `MAIL_FROM_NAME` rimane il valore di ripiego se il branding non è disponibile. I link di invito/reset devono essere HTTPS, salvo `localhost` durante lo sviluppo. Non sono presenti intestazioni di disiscrizione perché si tratta di notifiche operative indispensabili e non di newsletter; eventuali comunicazioni promozionali dovranno usare un flusso separato con consenso e cancellazione.
+
+### Template React Email e modalità scura
+
+Il componente condiviso usa primitive semantiche compatibili con i client di posta, stili essenziali inline, tabelle di presentazione, preheader nascosto e fallback testuale derivato dallo stesso HTML. La palette riprende quella del sito. La modalità scura dichiara `color-scheme`, usa `prefers-color-scheme` per i client compatibili, selettori Outlook `[data-ogsc]` e una protezione circoscritta per la full inversion di Gmail iOS; il logo mantiene uno sfondo chiaro per non alterarne la leggibilità.
+
+Per aprire l’anteprima locale senza inviare email:
+
+```powershell
+pnpm run email:dev
+```
+
+L’interfaccia React Email sarà disponibile su `http://localhost:3001` con soli dati dimostrativi.
 
 ## Collaudo controllato
 

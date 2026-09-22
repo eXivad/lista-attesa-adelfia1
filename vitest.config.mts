@@ -18,7 +18,12 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       reporter: ["text", "html", "json-summary"],
-      include: ["modules/**/*.ts", "lib/security/**/*.ts", "providers/**/*.ts"],
+      include: [
+        "modules/**/*.ts",
+        "lib/security/**/*.ts",
+        "providers/**/*.ts",
+        "emails/_components/**/*.tsx",
+      ],
       exclude: ["**/*.test.ts", "**/*.d.ts", "**/generated/**"],
       thresholds: {
         branches: 80,

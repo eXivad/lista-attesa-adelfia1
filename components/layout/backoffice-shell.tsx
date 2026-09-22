@@ -261,7 +261,7 @@ function BrandContent({
           <UsersRound className="size-5" aria-hidden="true" />
         )}
       </span>
-      <span className="truncate">Gruppo AGESCI {groupName}</span>
+      <span className="truncate">Gruppo {groupName}</span>
     </span>
   );
 }

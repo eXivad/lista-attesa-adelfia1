@@ -21,9 +21,9 @@ const registration = {
   bccRecipients: [],
 };
 
-describe("template email Gmail", () => {
-  it("riproduce il testo completo della conferma di inserimento in lista", () => {
-    const message = registrationConfirmationMail(registration, options);
+describe("template email React Email", () => {
+  it("riproduce il testo completo della conferma di inserimento in lista", async () => {
+    const message = await registrationConfirmationMail(registration, options);
 
     expect(message.text).toContain("Lista d’Attesa - AGESCI\nAGESCI Adelfia 1");
     expect(message.text).toContain(
@@ -42,23 +42,24 @@ describe("template email Gmail", () => {
     expect(message.text).toContain("Cordiali saluti,\nAGESCI Adelfia 1");
   });
 
-  it("mostra logo incorporato, intestazione e dati dinamici in grassetto senza consentire HTML", () => {
-    const message = registrationConfirmationMail(registration, options);
+  it("mostra logo incorporato, intestazione e dati dinamici in grassetto senza consentire HTML", async () => {
+    const message = await registrationConfirmationMail(registration, options);
 
     expect(message.html).toContain('src="cid:logo-lista-attesa@agesci"');
     expect(message.html).toContain('alt="Logo AGESCI Adelfia 1"');
     expect(message.html).toContain("Lista d’Attesa - AGESCI");
     expect(message.html).toContain("<strong>AGESCI Adelfia 1</strong>");
     expect(message.html).toContain(
-      "<strong>Mario &lt;script&gt;alert(&#39;x&#39;)&lt;/script&gt; Rossi</strong>",
+      "<strong>Mario &lt;script&gt;alert(",
     );
+    expect(message.html).toContain("&lt;/script&gt; Rossi</strong>");
     expect(message.html).toContain("<strong>12 maggio 2018</strong>");
     expect(message.html).not.toContain("<script>");
   });
 
-  it("evidenzia i dati principali e firma tutti i flussi con il nome del Gruppo", () => {
+  it("evidenzia i dati principali e firma tutti i flussi con il nome del Gruppo", async () => {
     const expiresAt = new Date("2026-09-05T18:00:00Z");
-    const messages = [
+    const messages = await Promise.all([
       registrationConfirmationMail(registration, options),
       acceptanceConfirmationMail(registration, options),
       rejectionConfirmationMail(registration, options),
@@ -75,17 +76,17 @@ describe("template email Gmail", () => {
         expiresAt,
       }, options),
       diagnosticMail(options),
-    ];
+    ]);
 
     for (const message of messages) {
       expect(message.text).toContain("Cordiali saluti,\nAGESCI Adelfia 1");
-      expect(message.html).toContain("Cordiali saluti,<br><strong>AGESCI Adelfia 1</strong>");
+      expect(message.html).toMatch(/Cordiali saluti,<br\/?><strong>AGESCI Adelfia 1<\/strong>/);
     }
     expect(messages[1].html).toContain(
       "<strong>accettazione del posto proposto </strong>",
     );
     expect(messages[1].html).toContain(
-      "<strong>Mario &lt;script&gt;alert(&#39;x&#39;)&lt;/script&gt; Rossi</strong>",
+      "<strong>Mario &lt;script&gt;alert(",
     );
     expect(messages[3].html).toContain("<strong>Capo Uno</strong>");
     expect(messages[3].html).toContain("<strong>5 settembre 2026 alle ore 20:00</strong>");
@@ -93,8 +94,8 @@ describe("template email Gmail", () => {
     expect(messages[4].html).toContain("https://app.example.it/reset/token");
   });
 
-  it("usa il nome dinamico del Gruppo anche nel testo dell'accettazione", () => {
-    const message = acceptanceConfirmationMail(registration, {
+  it("usa il nome dinamico del Gruppo anche nel testo dell'accettazione", async () => {
+    const message = await acceptanceConfirmationMail(registration, {
       ...options,
       organizationName: "AGESCI Bari 42",
     });
@@ -108,67 +109,109 @@ describe("template email Gmail", () => {
     expect(message.text).not.toContain("Gruppo Scout AGESCI Adelfia 1");
   });
 
-  it("consente HTTP soltanto per lo sviluppo locale e rifiuta URL con credenziali", () => {
-    expect(() => staffInvitationMail({
-      recipient: "capo@example.it",
-      staffName: "Capo Uno",
-      invitationUrl: "http://localhost:3000/invito/token",
-      expiresAt: new Date(),
-    }, options)).not.toThrow();
+  it("consente HTTP soltanto per lo sviluppo locale e rifiuta URL con credenziali", async () => {
+    const renderInvitation = (invitationUrl: string) => Promise.resolve().then(() =>
+      staffInvitationMail({
+        recipient: "capo@example.it",
+        staffName: "Capo Uno",
+        invitationUrl,
+        expiresAt: new Date(),
+      }, options));
 
-    expect(() => staffInvitationMail({
-      recipient: "capo@example.it",
-      staffName: "Capo Uno",
-      invitationUrl: "http://example.it/invito/token",
-      expiresAt: new Date(),
-    }, options)).toThrow("HTTPS");
-
-    expect(() => staffInvitationMail({
-      recipient: "capo@example.it",
-      staffName: "Capo Uno",
-      invitationUrl: "https://user:password@example.it/invito/token",
-      expiresAt: new Date(),
-    }, options)).toThrow("credenziali");
+    await expect(renderInvitation("http://localhost:3000/invito/token"))
+      .resolves.toEqual(expect.objectContaining({ subject: expect.any(String) }));
+    await expect(renderInvitation("http://example.it/invito/token"))
+      .rejects.toThrow("HTTPS");
+    await expect(renderInvitation("https://user:password@example.it/invito/token"))
+      .rejects.toThrow("credenziali");
   });
 
-  it("genera il messaggio diagnostico senza immagine se non è stato configurato un logo", () => {
-    const message = diagnosticMail({ organizationName: options.organizationName });
+  it("genera il messaggio diagnostico senza immagine se non è stato configurato un logo", async () => {
+    const message = await diagnosticMail({ organizationName: options.organizationName });
     expect(message.subject).toContain("Test configurazione email");
     expect(message.text).toContain("SPF, DKIM e DMARC");
     expect(message.html).not.toContain("<img");
   });
 
-  it("dichiara e applica una palette scura controllata senza invertire i colori del logo", () => {
-    const message = registrationConfirmationMail(registration, options);
+  it("renderizza un documento completo con preheader e primitive compatibili React Email", async () => {
+    const message = await registrationConfirmationMail(registration, options);
 
     expect(message.html).toContain(
-      '<meta name="color-scheme" content="light dark">',
+      '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"',
     );
-    expect(message.html).toContain(
-      '<meta name="supported-color-schemes" content="light dark">',
+    expect(message.html).toContain('data-skip-in-text="true"');
+    expect(message.html).toContain('role="presentation"');
+    expect(message.text).not.toContain("Richiesta ricevuta — AGESCI Adelfia 1");
+  });
+
+  it("dichiara e applica una palette scura controllata senza invertire i colori del logo", async () => {
+    const message = await registrationConfirmationMail(registration, options);
+
+    expect(message.html).toMatch(
+      /<meta name="color-scheme" content="light dark"\s*\/?>/,
+    );
+    expect(message.html).toMatch(
+      /<meta name="supported-color-schemes" content="light dark"\s*\/?>/,
     );
     expect(message.html).toContain("@media (prefers-color-scheme:dark)");
     expect(message.html).toContain(
-      ".email-body,.email-page{background-color:#111827!important}",
+      ".email-body,.email-page{background-color:#111111!important}",
     );
     expect(message.html).toContain(
-      ".email-card,.email-content{background-color:#1c1917!important}",
+      ".email-card,.email-content{background-color:#000000!important}",
     );
     expect(message.html).toContain(
       ".email-content,.email-heading,.email-copy{color:#f5f5f4!important}",
     );
     expect(message.html).toContain(
-      ".email-logo{background-color:#fafaf9!important;background-image:linear-gradient(#fafaf9,#fafaf9)!important}",
-    );
-    expect(message.html).toContain(
-      "[data-ogsc] .email-card,[data-ogsc] .email-content{background-color:#1c1917!important}",
+      ".email-logo{background-color:#ffffff!important;background-image:linear-gradient(#ffffff,#ffffff)!important}",
     );
   });
 
-  it("protegge soltanto intestazione e pulsanti dalla full inversion di Gmail iOS", () => {
-    const message = diagnosticMail(options);
+  it("mantiene la palette chiara come base e usa una tipografia email-safe per gli heading", async () => {
+    const message = await registrationConfirmationMail(registration, options);
 
-    expect(message.html).toContain("<!DOCTYPE html>");
+    expect(message.html).not.toContain('<html style="color-scheme:light dark');
+    expect(message.html).toContain(
+      'class="email-page" style="width:100%;background-color:#f5f5f4',
+    );
+    expect(message.html).toContain(
+      'class="email-content" style="background-color:#ffffff;color:#292524',
+    );
+    expect(message.html).toContain("@media (prefers-color-scheme:light)");
+    expect(message.html).toContain(
+      ".email-body,.email-page{background-color:#f5f5f4!important}",
+    );
+    expect(message.html).toContain(
+      ".email-card,.email-content{background-color:#ffffff!important}",
+    );
+    expect(message.html).toContain('<img class="email-logo"');
+    expect(message.html).toContain('src="cid:logo-lista-attesa@agesci"');
+    expect(message.html).toContain(
+      "width:76px;max-width:76px;height:76px;border-radius:12px;background-color:#ffffff;background-image:linear-gradient(#ffffff,#ffffff)",
+    );
+    expect(message.html).toContain(
+      'class="email-group" style="margin-top:5px;color:#ffffff;font-family:Roboto, Arial, Helvetica, sans-serif',
+    );
+    expect(message.html).toContain(
+      'class="email-heading" style="margin:0 0 24px;color:#292524;font-family:Roboto, Arial, Helvetica, sans-serif',
+    );
+    expect(message.html).not.toContain("Georgia");
+  });
+
+  it("non applica una palette scura Outlook non condizionata anche in modalità chiara", async () => {
+    const message = await registrationConfirmationMail(registration, options);
+
+    expect(message.html).not.toContain("[data-ogsb]");
+    expect(message.html).not.toContain("[data-ogsc]");
+  });
+
+  it("protegge soltanto intestazione e pulsanti dalla full inversion di Gmail iOS", async () => {
+    const message = await diagnosticMail(options);
+
+    expect(message.html).toContain(
+      '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"',
+    );
     expect(message.html).toContain('<body class="email-body"');
     expect(message.html).toContain(
       "u + .email-body .gmail-blend-screen{background:#000000;mix-blend-mode:screen}",
@@ -176,24 +219,24 @@ describe("template email Gmail", () => {
     expect(message.html).toContain(
       "u + .email-body .gmail-blend-difference{background:#000000;mix-blend-mode:difference}",
     );
-    expect(message.html).toContain('class="email-header" bgcolor="#4c1d95"');
+    expect(message.html).toContain('class="email-header"');
     expect(message.html).toContain(
       "background-image:linear-gradient(#4c1d95,#4c1d95)",
     );
     expect(message.html.match(/class="gmail-blend-screen"/g)).toHaveLength(1);
     expect(message.html.match(/class="gmail-blend-difference"/g)).toHaveLength(1);
-    expect(message.html).toContain('class="email-content" bgcolor="#fafaf9"');
+    expect(message.html).toContain('class="email-content"');
     expect(message.html).toContain(
       'class="email-heading" style="margin:0 0 24px;color:#292524',
     );
     expect(message.html).toContain(
-      "background-image:linear-gradient(#fafaf9,#fafaf9)",
+      "background-image:linear-gradient(#ffffff,#ffffff)",
     );
     expect(message.html).not.toContain("@media only screen and (max-width:");
   });
 
-  it("protegge il testo bianco del pulsante senza bloccare il resto del contenuto", () => {
-    const message = staffInvitationMail({
+  it("protegge il testo bianco del pulsante senza bloccare il resto del contenuto", async () => {
+    const message = await staffInvitationMail({
       recipient: "capo@example.it",
       staffName: "Capo Uno",
       invitationUrl: "https://app.example.it/invito/token",
@@ -202,17 +245,12 @@ describe("template email Gmail", () => {
 
     expect(message.html.match(/class="gmail-blend-screen"/g)).toHaveLength(2);
     expect(message.html.match(/class="gmail-blend-difference"/g)).toHaveLength(2);
+    expect(message.html).toContain('class="email-button"');
+    expect(message.html).toContain('href="https://app.example.it/invito/token"');
     expect(message.html).toContain(
-      '<td class="email-button-cell" bgcolor="#4c1d95"',
+      "background-image:linear-gradient(#4c1d95,#4c1d95)",
     );
-    expect(message.html).toContain(
-      "background-color:#4c1d95;background-image:linear-gradient(#4c1d95,#4c1d95);border-radius:8px",
-    );
-    expect(message.html).toContain(
-      '<a class="email-button" href="https://app.example.it/invito/token" style="display:block;color:#ffffff',
-    );
-    expect(message.html).toContain(
-      '<a class="email-link" href="https://app.example.it/invito/token" style="color:#4c1d95',
-    );
+    expect(message.html).toContain('class="email-link"');
+    expect(message.html).toContain("mso-text-raise:");
   });
 });

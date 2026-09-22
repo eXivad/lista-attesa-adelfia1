@@ -16,7 +16,7 @@ Il nome e il logo del Gruppo sono configurabili dal backoffice. Visitando `/`, u
 - Gestione dell’anno associativo, apertura/chiusura chiamate e configurazione delle branche.
 - Statistiche annuali anonime e dashboard operativa.
 - Autenticazione email/password, ruoli `ADMIN` e `STAFF`, inviti e recupero password.
-- Email transazionali con Nodemailer, Gmail SMTP e OAuth 2.0.
+- Email transazionali responsive con React Email, Nodemailer, Gmail SMTP e OAuth 2.0.
 - Limite giornaliero prudenziale degli invii registrato su PostgreSQL.
 - Importazione CSV/XLSX completa o storica con dry-run, rilevamento duplicati e transazione atomica.
 - Retention configurabile con modalità dry-run.
@@ -33,9 +33,9 @@ Lo stato dettagliato di P0, P1 e P2 è disponibile in [docs/backlog-p0-p2.md](do
 | Form e validazione | React Hook Form 7.87.0, Zod 4.5.4 |
 | Database | PostgreSQL 18, Prisma 7.10.0, adapter `pg` |
 | Autenticazione | Better Auth 1.7.2 |
-| Email | Nodemailer 10.0.0, Gmail SMTP OAuth 2.0 |
+| Email | React Email 6.9.5, Nodemailer 10.0.0, Gmail SMTP OAuth 2.0 |
 | Test | Vitest 4.1.11, Playwright 1.62.1, axe-core |
-| Package manager | pnpm 12.3.2 |
+| Package manager | pnpm 10.33.4 |
 
 Le versioni sono bloccate nel lockfile per rendere installazione e CI riproducibili.
 
@@ -44,6 +44,7 @@ Le versioni sono bloccate nel lockfile per rendere installazione e CI riproducib
 ```text
 app/                    Route, layout, Route Handler e Server Action Next.js
 components/             Componenti React e UI riutilizzabile
+emails/                 Template React Email e anteprima locale
 lib/server/             Composizione server, sessione, ambiente e servizi
 lib/security/           Rate limiting e primitive di sicurezza
 modules/                Dominio, schemi Zod e casi d’uso
@@ -63,7 +64,7 @@ Per lo sviluppo locale servono:
 
 - Git;
 - Node.js `>= 24.15.0`;
-- pnpm `12.3.2`;
+- pnpm `10.33.4`;
 - Docker Desktop o un’installazione Docker con Compose.
 
 Verificare le versioni:
@@ -239,6 +240,7 @@ In produzione impostare sempre `E2E_ALLOW_RESET=false`.
 | `pnpm run verify:waiting-list` | Riepilogo aggregato privo di dati personali |
 | `pnpm run mail:verify` | Verifica TLS e OAuth Gmail senza invio |
 | `pnpm run mail:test` | Invio esplicito di una singola email diagnostica |
+| `pnpm run email:dev` | Anteprima locale React Email su porta 3001 |
 | `pnpm run retention` | Dry-run o applicazione della retention |
 
 ## Gmail SMTP e OAuth 2.0
@@ -255,6 +257,16 @@ pnpm run mail:test
 Il primo comando non invia messaggi. Prima del secondo, impostare `MAIL_TEST_RECIPIENT` su una casella controllata personalmente.
 
 In produzione, un Capo Gruppo può eseguire la stessa prova da **Impostazioni → Test invio email** senza accesso alla console e senza aggiungere variabili d'ambiente: inserisce un solo destinatario e usa il modello diagnostico fisso. Non c'è un limite orario applicativo per questa prova, ma resta attiva la quota prudenziale giornaliera Gmail. L'esito positivo conferma soltanto l'accettazione da parte di Gmail SMTP: controllare nella casella destinataria Posta in arrivo, Spam e intestazioni.
+
+### Anteprima dei template React Email
+
+Per controllare il layout senza collegarsi a Gmail e senza inviare messaggi:
+
+```powershell
+pnpm run email:dev
+```
+
+Aprire `http://localhost:3001`. L’anteprima usa dati dimostrativi e non carica dati personali o segreti. Il logo reale viene allegato tramite CID soltanto durante l’invio SMTP; nell’anteprima si verificano struttura, tipografia, colori, pulsanti e adattamento responsive. I contenuti condivisi sono definiti in `emails/_components/waiting-list-transactional-email.tsx`, mentre oggetto, testi e dati dinamici restano in `providers/mail/gmail-mail-templates.ts`.
 
 ## Importazione della lista d’attesa
 
