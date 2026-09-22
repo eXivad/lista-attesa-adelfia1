@@ -21,9 +21,9 @@ const registration = {
   bccRecipients: [],
 };
 
-describe("template email Gmail", () => {
-  it("riproduce il testo completo della conferma di inserimento in lista", () => {
-    const message = registrationConfirmationMail(registration, options);
+describe("template email React Email", () => {
+  it("riproduce il testo completo della conferma di inserimento in lista", async () => {
+    const message = await registrationConfirmationMail(registration, options);
 
     expect(message.text).toContain("Lista d’Attesa - AGESCI\nAGESCI Adelfia 1");
     expect(message.text).toContain(
@@ -42,8 +42,8 @@ describe("template email Gmail", () => {
     expect(message.text).toContain("Cordiali saluti,\nAGESCI Adelfia 1");
   });
 
-  it("mostra logo incorporato, intestazione e dati dinamici in grassetto senza consentire HTML", () => {
-    const message = registrationConfirmationMail(registration, options);
+  it("mostra logo incorporato, intestazione e dati dinamici in grassetto senza consentire HTML", async () => {
+    const message = await registrationConfirmationMail(registration, options);
 
     expect(message.html).toContain('src="cid:logo-lista-attesa@agesci"');
     expect(message.html).toContain('alt="Logo AGESCI Adelfia 1"');
@@ -56,9 +56,9 @@ describe("template email Gmail", () => {
     expect(message.html).not.toContain("<script>");
   });
 
-  it("evidenzia i dati principali e firma tutti i flussi con il nome del Gruppo", () => {
+  it("evidenzia i dati principali e firma tutti i flussi con il nome del Gruppo", async () => {
     const expiresAt = new Date("2026-09-05T18:00:00Z");
-    const messages = [
+    const messages = await Promise.all([
       registrationConfirmationMail(registration, options),
       acceptanceConfirmationMail(registration, options),
       rejectionConfirmationMail(registration, options),
@@ -75,7 +75,7 @@ describe("template email Gmail", () => {
         expiresAt,
       }, options),
       diagnosticMail(options),
-    ];
+    ]);
 
     for (const message of messages) {
       expect(message.text).toContain("Cordiali saluti,\nAGESCI Adelfia 1");
@@ -93,8 +93,8 @@ describe("template email Gmail", () => {
     expect(messages[4].html).toContain("https://app.example.it/reset/token");
   });
 
-  it("usa il nome dinamico del Gruppo anche nel testo dell'accettazione", () => {
-    const message = acceptanceConfirmationMail(registration, {
+  it("usa il nome dinamico del Gruppo anche nel testo dell'accettazione", async () => {
+    const message = await acceptanceConfirmationMail(registration, {
       ...options,
       organizationName: "AGESCI Bari 42",
     });
@@ -108,38 +108,43 @@ describe("template email Gmail", () => {
     expect(message.text).not.toContain("Gruppo Scout AGESCI Adelfia 1");
   });
 
-  it("consente HTTP soltanto per lo sviluppo locale e rifiuta URL con credenziali", () => {
-    expect(() => staffInvitationMail({
-      recipient: "capo@example.it",
-      staffName: "Capo Uno",
-      invitationUrl: "http://localhost:3000/invito/token",
-      expiresAt: new Date(),
-    }, options)).not.toThrow();
+  it("consente HTTP soltanto per lo sviluppo locale e rifiuta URL con credenziali", async () => {
+    const renderInvitation = (invitationUrl: string) => Promise.resolve().then(() =>
+      staffInvitationMail({
+        recipient: "capo@example.it",
+        staffName: "Capo Uno",
+        invitationUrl,
+        expiresAt: new Date(),
+      }, options));
 
-    expect(() => staffInvitationMail({
-      recipient: "capo@example.it",
-      staffName: "Capo Uno",
-      invitationUrl: "http://example.it/invito/token",
-      expiresAt: new Date(),
-    }, options)).toThrow("HTTPS");
-
-    expect(() => staffInvitationMail({
-      recipient: "capo@example.it",
-      staffName: "Capo Uno",
-      invitationUrl: "https://user:password@example.it/invito/token",
-      expiresAt: new Date(),
-    }, options)).toThrow("credenziali");
+    await expect(renderInvitation("http://localhost:3000/invito/token"))
+      .resolves.toEqual(expect.objectContaining({ subject: expect.any(String) }));
+    await expect(renderInvitation("http://example.it/invito/token"))
+      .rejects.toThrow("HTTPS");
+    await expect(renderInvitation("https://user:password@example.it/invito/token"))
+      .rejects.toThrow("credenziali");
   });
 
-  it("genera il messaggio diagnostico senza immagine se non è stato configurato un logo", () => {
-    const message = diagnosticMail({ organizationName: options.organizationName });
+  it("genera il messaggio diagnostico senza immagine se non è stato configurato un logo", async () => {
+    const message = await diagnosticMail({ organizationName: options.organizationName });
     expect(message.subject).toContain("Test configurazione email");
     expect(message.text).toContain("SPF, DKIM e DMARC");
     expect(message.html).not.toContain("<img");
   });
 
-  it("dichiara e applica una palette scura controllata senza invertire i colori del logo", () => {
-    const message = registrationConfirmationMail(registration, options);
+  it("renderizza un documento completo con preheader e primitive compatibili React Email", async () => {
+    const message = await registrationConfirmationMail(registration, options);
+
+    expect(message.html).toContain(
+      '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"',
+    );
+    expect(message.html).toContain('id="__react-email-preview"');
+    expect(message.html).toContain('role="presentation"');
+    expect(message.text).not.toContain("__react-email-preview");
+  });
+
+  it("dichiara e applica una palette scura controllata senza invertire i colori del logo", async () => {
+    const message = await registrationConfirmationMail(registration, options);
 
     expect(message.html).toContain(
       '<meta name="color-scheme" content="light dark">',
@@ -165,8 +170,8 @@ describe("template email Gmail", () => {
     );
   });
 
-  it("protegge soltanto intestazione e pulsanti dalla full inversion di Gmail iOS", () => {
-    const message = diagnosticMail(options);
+  it("protegge soltanto intestazione e pulsanti dalla full inversion di Gmail iOS", async () => {
+    const message = await diagnosticMail(options);
 
     expect(message.html).toContain("<!DOCTYPE html>");
     expect(message.html).toContain('<body class="email-body"');
@@ -192,8 +197,8 @@ describe("template email Gmail", () => {
     expect(message.html).not.toContain("@media only screen and (max-width:");
   });
 
-  it("protegge il testo bianco del pulsante senza bloccare il resto del contenuto", () => {
-    const message = staffInvitationMail({
+  it("protegge il testo bianco del pulsante senza bloccare il resto del contenuto", async () => {
+    const message = await staffInvitationMail({
       recipient: "capo@example.it",
       staffName: "Capo Uno",
       invitationUrl: "https://app.example.it/invito/token",
@@ -214,5 +219,6 @@ describe("template email Gmail", () => {
     expect(message.html).toContain(
       '<a class="email-link" href="https://app.example.it/invito/token" style="color:#4c1d95',
     );
+    expect(message.html).toContain("mso-text-raise:");
   });
 });
