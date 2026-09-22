@@ -50,7 +50,7 @@ export class PrismaApplicantQueryRepository {
   async list(filters: ApplicantListQuery) {
     const where = buildWhere(filters);
     const skip = (filters.page - 1) * filters.pageSize;
-    const [entries, total, branchRows] = await this.client.$transaction([
+    const [entries, total, branchRows, associativeYear] = await this.client.$transaction([
       this.client.waitingListEntry.findMany({
         where,
         orderBy: [{ createdAt: "asc" }, { id: "asc" }],
@@ -60,6 +60,10 @@ export class PrismaApplicantQueryRepository {
       }),
       this.client.waitingListEntry.count({ where }),
       this.client.branchConfiguration.findMany({ orderBy: { minAge: "asc" } }),
+      this.client.associativeYear.findFirst({
+        where: { currentKey: 1 },
+        select: { startYear: true },
+      }),
     ]);
 
     const branchConfiguration: BranchConfiguration[] = branchRows.map(
@@ -78,13 +82,18 @@ export class PrismaApplicantQueryRepository {
       pageSize: filters.pageSize,
       pageCount: Math.max(1, Math.ceil(total / filters.pageSize)),
       branchConfiguration,
+      associativeYearStart: associativeYear?.startYear ?? null,
     };
   }
 
   async getById(id: string) {
-    const [entry, branchRows] = await this.client.$transaction([
+    const [entry, branchRows, associativeYear] = await this.client.$transaction([
       this.client.waitingListEntry.findUnique({ where: { id }, select: detailSelection }),
       this.client.branchConfiguration.findMany({ orderBy: { minAge: "asc" } }),
+      this.client.associativeYear.findFirst({
+        where: { currentKey: 1 },
+        select: { startYear: true },
+      }),
     ]);
 
     return {
@@ -93,6 +102,7 @@ export class PrismaApplicantQueryRepository {
         ({ branch, minAge, maxAge, entryAge }) =>
           ({ branch, minAge, maxAge, entryAge }) satisfies BranchConfiguration,
       ),
+      associativeYearStart: associativeYear?.startYear ?? null,
     };
   }
 }

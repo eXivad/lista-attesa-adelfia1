@@ -33,8 +33,8 @@ export default async function ApplicantDetailPage({
 
   const entry = result.entry;
   const branch = calculateBranch(
-    entry.birthDate,
-    new Date(),
+    entry.birthYear,
+    result.associativeYearStart,
     result.branchConfiguration,
   );
   const messages = await searchParams;

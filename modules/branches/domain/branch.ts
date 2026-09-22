@@ -1,5 +1,3 @@
-import { calculateAge } from "@/modules/applicants/domain/age";
-
 export const BRANCHES = ["LC", "EG", "RS"] as const;
 export type Branch = (typeof BRANCHES)[number];
 
@@ -18,12 +16,22 @@ export interface BranchConfiguration {
 }
 
 export function calculateBranch(
-  birthDate: Date,
-  referenceDate: Date,
+  birthYear: number,
+  associativeYearStart: number | null,
   configuration: BranchConfiguration[],
 ): Branch | null {
-  const age = calculateAge(birthDate, referenceDate);
-  return configuration.find(({ minAge, maxAge }) => age >= minAge && age <= maxAge)?.branch ?? null;
+  if (
+    associativeYearStart === null ||
+    !Number.isInteger(birthYear) ||
+    !Number.isInteger(associativeYearStart)
+  ) {
+    return null;
+  }
+
+  const associativeAge = associativeYearStart - birthYear;
+  return configuration.find(
+    ({ minAge, maxAge }) => associativeAge >= minAge && associativeAge <= maxAge,
+  )?.branch ?? null;
 }
 
 export function getEntryBirthYears(
