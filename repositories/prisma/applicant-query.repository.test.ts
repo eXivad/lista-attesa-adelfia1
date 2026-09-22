@@ -34,6 +34,9 @@ function createClient() {
         { branch: "LC", minAge: 8, maxAge: 11, entryAge: 8 },
       ]),
     },
+    associativeYear: {
+      findFirst: vi.fn(async () => ({ startYear: 2026 })),
+    },
     $transaction: vi.fn(async (operations: Array<Promise<unknown>>) => Promise.all(operations)),
   };
   return client;
@@ -68,6 +71,11 @@ describe("PrismaApplicantQueryRepository", () => {
     );
     expect(page.items[0].position).toBe(21);
     expect(page.pageCount).toBe(2);
+    expect(page.associativeYearStart).toBe(2026);
+    expect(client.associativeYear.findFirst).toHaveBeenCalledWith({
+      where: { currentKey: 1 },
+      select: { startYear: true },
+    });
   });
 
   it("cerca anche nei dati dei tutori senza cambiare l'ordine", async () => {
@@ -84,5 +92,18 @@ describe("PrismaApplicantQueryRepository", () => {
     expect(call.where.OR).toContainEqual(
       expect.objectContaining({ guardians: { some: expect.any(Object) } }),
     );
+  });
+
+  it("restituisce l'anno associativo corrente anche nel dettaglio", async () => {
+    const client = createClient();
+    const repository = new PrismaApplicantQueryRepository(client as never);
+
+    const result = await repository.getById("01-oldest");
+
+    expect(result.associativeYearStart).toBe(2026);
+    expect(client.associativeYear.findFirst).toHaveBeenCalledWith({
+      where: { currentKey: 1 },
+      select: { startYear: true },
+    });
   });
 });

@@ -14,13 +14,19 @@ const configuration: BranchConfiguration[] = [
 ];
 
 describe("branche", () => {
-  it("calcola la branca dinamicamente rispetto alla data di riferimento", () => {
-    const referenceDate = new Date("2026-09-03T12:00:00.000Z");
+  it("calcola la branca dall'età associativa ignorando giorno e mese di nascita", () => {
+    expect(calculateBranch(2018, 2026, configuration)).toBe("LC");
+    expect(calculateBranch(2015, 2026, configuration)).toBe("LC");
+    expect(calculateBranch(2014, 2026, configuration)).toBe("EG");
+    expect(calculateBranch(2011, 2026, configuration)).toBe("EG");
+    expect(calculateBranch(2010, 2026, configuration)).toBe("RS");
+    expect(calculateBranch(2005, 2026, configuration)).toBe("RS");
+    expect(calculateBranch(2019, 2026, configuration)).toBeNull();
+    expect(calculateBranch(2004, 2026, configuration)).toBeNull();
+  });
 
-    expect(calculateBranch(new Date("2018-09-03"), referenceDate, configuration)).toBe("LC");
-    expect(calculateBranch(new Date("2014-09-03"), referenceDate, configuration)).toBe("EG");
-    expect(calculateBranch(new Date("2010-09-03"), referenceDate, configuration)).toBe("RS");
-    expect(calculateBranch(new Date("2019-09-03"), referenceDate, configuration)).toBeNull();
+  it("non assegna una branca senza un anno associativo corrente", () => {
+    expect(calculateBranch(2018, null, configuration)).toBeNull();
   });
 
   it("calcola gli anni di ingresso usando soltanto startYear ed entryAge", () => {
