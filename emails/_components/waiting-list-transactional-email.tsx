@@ -40,11 +40,7 @@ export function WaitingListTransactionalEmail({
   action,
 }: WaitingListTransactionalEmailProps) {
   return (
-    <Html
-      lang="it"
-      dir="ltr"
-      style={{ colorScheme: "light dark", supportedColorSchemes: "light dark" } as CSSProperties}
-    >
+    <Html lang="it" dir="ltr">
       <Head>
         <meta name="color-scheme" content="light dark" />
         <meta name="supported-color-schemes" content="light dark" />
@@ -59,14 +55,14 @@ export function WaitingListTransactionalEmail({
                 <Row>
                   {logoSrc ? (
                     <Column style={logoColumnStyle}>
-                      <Section className="email-logo" style={logoContainerStyle}>
-                        <Img
-                          src={logoSrc}
-                          width="60"
-                          alt={`Logo ${organizationName}`}
-                          style={logoStyle}
-                        />
-                      </Section>
+                      <Img
+                        className="email-logo"
+                        src={logoSrc}
+                        width="76"
+                        height="76"
+                        alt={`Logo ${organizationName}`}
+                        style={logoStyle}
+                      />
                     </Column>
                   ) : null}
                   <Column style={headerTextColumnStyle}>
@@ -160,8 +156,8 @@ const EMAIL_COLOR_SCHEME_CSS = [
   ":root{color-scheme:light dark;supported-color-schemes:light dark}",
   "u + .email-body .gmail-blend-screen{background:#000000;mix-blend-mode:screen}",
   "u + .email-body .gmail-blend-difference{background:#000000;mix-blend-mode:difference}",
-  "@media (prefers-color-scheme:dark){.email-body,.email-page{background-color:#111827!important}.email-card,.email-content{background-color:#1c1917!important}.email-card{border-color:#44403c!important}.email-header,.email-header-inner{background-color:#4c1d95!important;background-image:linear-gradient(#4c1d95,#4c1d95)!important;color:#ffffff!important}.email-content,.email-heading,.email-copy{color:#f5f5f4!important}.email-link{color:#c4b5fd!important}.email-kicker,.email-group,.email-button{color:#ffffff!important}.email-muted{color:#d6d3d1!important}.email-divider{border-color:#57534e!important}.email-logo{background-color:#fafaf9!important;background-image:linear-gradient(#fafaf9,#fafaf9)!important}}",
-  "[data-ogsc] .email-body,[data-ogsc] .email-page{background-color:#111827!important}[data-ogsc] .email-card,[data-ogsc] .email-content{background-color:#1c1917!important}[data-ogsc] .email-card{border-color:#44403c!important}[data-ogsc] .email-header,[data-ogsc] .email-header-inner{background-color:#4c1d95!important;background-image:linear-gradient(#4c1d95,#4c1d95)!important;color:#ffffff!important}[data-ogsc] .email-content,[data-ogsc] .email-heading,[data-ogsc] .email-copy{color:#f5f5f4!important}[data-ogsc] .email-link{color:#c4b5fd!important}[data-ogsc] .email-kicker,[data-ogsc] .email-group,[data-ogsc] .email-button{color:#ffffff!important}[data-ogsc] .email-muted{color:#d6d3d1!important}[data-ogsc] .email-divider{border-color:#57534e!important}[data-ogsc] .email-logo{background-color:#fafaf9!important;background-image:linear-gradient(#fafaf9,#fafaf9)!important}",
+  "@media (prefers-color-scheme:light){.email-body,.email-page{background-color:#f5f5f4!important}.email-card,.email-content{background-color:#ffffff!important}.email-card{border-color:#e7e5e4!important}.email-header,.email-header-inner{background-color:#4c1d95!important;background-image:linear-gradient(#4c1d95,#4c1d95)!important;color:#ffffff!important}.email-content,.email-heading,.email-copy{color:#292524!important}.email-link{color:#4c1d95!important}.email-kicker,.email-group,.email-button{color:#ffffff!important}.email-muted{color:#57534e!important}.email-divider{border-color:#e7e5e4!important}.email-logo{background-color:#ffffff!important;background-image:linear-gradient(#ffffff,#ffffff)!important}}",
+  "@media (prefers-color-scheme:dark){.email-body,.email-page{background-color:#111111!important}.email-card,.email-content{background-color:#000000!important}.email-card{border-color:#404040!important}.email-header,.email-header-inner{background-color:#4c1d95!important;background-image:linear-gradient(#4c1d95,#4c1d95)!important;color:#ffffff!important}.email-content,.email-heading,.email-copy{color:#f5f5f4!important}.email-link{color:#c4b5fd!important}.email-kicker,.email-group,.email-button{color:#ffffff!important}.email-muted{color:#d6d3d1!important}.email-divider{border-color:#525252!important}.email-logo{background-color:#ffffff!important;background-image:linear-gradient(#ffffff,#ffffff)!important}}",
 ].join("");
 
 const bodyStyle: CSSProperties = {
@@ -182,9 +178,8 @@ const cardStyle: CSSProperties = {
   maxWidth: "600px",
   margin: "0 auto",
   overflow: "hidden",
-  border: "1px solid #e7e5e4",
   borderRadius: "16px",
-  backgroundColor: "#fafaf9",
+  backgroundColor: "#ffffff",
 };
 
 const headerStyle: CSSProperties = {
@@ -207,19 +202,14 @@ const logoColumnStyle: CSSProperties = {
   verticalAlign: "middle",
 };
 
-const logoContainerStyle: CSSProperties = {
-  width: "76px",
-  padding: "8px",
-  borderRadius: "12px",
-  backgroundColor: "#fafaf9",
-  backgroundImage: "linear-gradient(#fafaf9,#fafaf9)",
-};
-
 const logoStyle: CSSProperties = {
   display: "block",
-  width: "60px",
-  maxWidth: "60px",
-  height: "auto",
+  width: "76px",
+  maxWidth: "76px",
+  height: "76px",
+  borderRadius: "12px",
+  backgroundColor: "#ffffff",
+  backgroundImage: "linear-gradient(#ffffff,#ffffff)",
   border: 0,
 };
 
@@ -239,7 +229,7 @@ const kickerStyle: CSSProperties = {
 const groupStyle: CSSProperties = {
   marginTop: "5px",
   color: "#ffffff",
-  fontFamily: '"Roboto Slab", Georgia, serif',
+  fontFamily: "Roboto, Arial, Helvetica, sans-serif",
   fontSize: "20px",
   fontWeight: 700,
   lineHeight: 1.3,
@@ -248,14 +238,14 @@ const groupStyle: CSSProperties = {
 
 const contentStyle: CSSProperties = {
   padding: "32px",
-  backgroundColor: "#fafaf9",
+  backgroundColor: "#ffffff",
   color: "#292524",
 };
 
 const headingStyle: CSSProperties = {
   margin: "0 0 24px",
   color: "#292524",
-  fontFamily: '"Roboto Slab", Georgia, serif',
+  fontFamily: "Roboto, Arial, Helvetica, sans-serif",
   fontSize: "26px",
   fontWeight: 700,
   lineHeight: 1.25,

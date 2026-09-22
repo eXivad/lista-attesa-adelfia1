@@ -37,4 +37,27 @@ describe("optimizeGmailInlineLogo", () => {
       mimeType: "image/png",
     })).rejects.toThrow("Logo email non elaborabile");
   });
+
+  it("incorpora uno sfondo bianco nel PNG per impedire l'inversione della trasparenza", async () => {
+    const transparentInput = await sharp({
+      create: {
+        width: 32,
+        height: 32,
+        channels: 4,
+        background: { r: 0, g: 0, b: 0, alpha: 0 },
+      },
+    }).png().toBuffer();
+
+    const result = await optimizeGmailInlineLogo({
+      content: transparentInput,
+      mimeType: "image/png",
+    });
+    const metadata = await sharp(result.content).metadata();
+    const pixel = await sharp(result.content).raw().toBuffer();
+
+    expect(metadata.width).toBe(EMAIL_LOGO_MAX_DIMENSION);
+    expect(metadata.height).toBe(EMAIL_LOGO_MAX_DIMENSION);
+    expect(metadata.hasAlpha).toBe(false);
+    expect([...pixel.subarray(0, 3)]).toEqual([255, 255, 255]);
+  });
 });

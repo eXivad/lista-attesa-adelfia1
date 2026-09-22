@@ -155,20 +155,55 @@ describe("template email React Email", () => {
     );
     expect(message.html).toContain("@media (prefers-color-scheme:dark)");
     expect(message.html).toContain(
-      ".email-body,.email-page{background-color:#111827!important}",
+      ".email-body,.email-page{background-color:#111111!important}",
     );
     expect(message.html).toContain(
-      ".email-card,.email-content{background-color:#1c1917!important}",
+      ".email-card,.email-content{background-color:#000000!important}",
     );
     expect(message.html).toContain(
       ".email-content,.email-heading,.email-copy{color:#f5f5f4!important}",
     );
     expect(message.html).toContain(
-      ".email-logo{background-color:#fafaf9!important;background-image:linear-gradient(#fafaf9,#fafaf9)!important}",
+      ".email-logo{background-color:#ffffff!important;background-image:linear-gradient(#ffffff,#ffffff)!important}",
+    );
+  });
+
+  it("mantiene la palette chiara come base e usa una tipografia email-safe per gli heading", async () => {
+    const message = await registrationConfirmationMail(registration, options);
+
+    expect(message.html).not.toContain('<html style="color-scheme:light dark');
+    expect(message.html).toContain(
+      'class="email-page" style="width:100%;background-color:#f5f5f4',
     );
     expect(message.html).toContain(
-      "[data-ogsc] .email-card,[data-ogsc] .email-content{background-color:#1c1917!important}",
+      'class="email-content" style="background-color:#ffffff;color:#292524',
     );
+    expect(message.html).toContain("@media (prefers-color-scheme:light)");
+    expect(message.html).toContain(
+      ".email-body,.email-page{background-color:#f5f5f4!important}",
+    );
+    expect(message.html).toContain(
+      ".email-card,.email-content{background-color:#ffffff!important}",
+    );
+    expect(message.html).toContain('<img class="email-logo"');
+    expect(message.html).toContain('src="cid:logo-lista-attesa@agesci"');
+    expect(message.html).toContain(
+      "width:76px;max-width:76px;height:76px;border-radius:12px;background-color:#ffffff;background-image:linear-gradient(#ffffff,#ffffff)",
+    );
+    expect(message.html).toContain(
+      'class="email-group" style="margin-top:5px;color:#ffffff;font-family:Roboto, Arial, Helvetica, sans-serif',
+    );
+    expect(message.html).toContain(
+      'class="email-heading" style="margin:0 0 24px;color:#292524;font-family:Roboto, Arial, Helvetica, sans-serif',
+    );
+    expect(message.html).not.toContain("Georgia");
+  });
+
+  it("non applica una palette scura Outlook non condizionata anche in modalità chiara", async () => {
+    const message = await registrationConfirmationMail(registration, options);
+
+    expect(message.html).not.toContain("[data-ogsb]");
+    expect(message.html).not.toContain("[data-ogsc]");
   });
 
   it("protegge soltanto intestazione e pulsanti dalla full inversion di Gmail iOS", async () => {
@@ -195,7 +230,7 @@ describe("template email React Email", () => {
       'class="email-heading" style="margin:0 0 24px;color:#292524',
     );
     expect(message.html).toContain(
-      "background-image:linear-gradient(#fafaf9,#fafaf9)",
+      "background-image:linear-gradient(#ffffff,#ffffff)",
     );
     expect(message.html).not.toContain("@media only screen and (max-width:");
   });
