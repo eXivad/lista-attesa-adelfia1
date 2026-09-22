@@ -40,7 +40,7 @@ interface SettingsPageProps {
 }
 
 export default async function SettingsPage({ searchParams }: SettingsPageProps) {
-  const admin = await requireCapability("users:manage");
+  await requireCapability("users:manage");
   const prisma = getPrismaClient();
   const privacyRepository = new PrismaPrivacyRepository(prisma);
   const [users, invitations, recipients, branding, privacyVersions, messages] = await Promise.all([
@@ -324,15 +324,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
       </Card>
 
       <Card>
-        <CardHeader>
-          <h2 className="font-slab text-xl font-bold text-violet-950">Test invio email</h2>
-          <p className="text-sm text-stone-600">
-            Invia una sola email di prova a una casella che controlli, anche dall&apos;app in produzione.
-          </p>
-        </CardHeader>
-        <CardContent>
-          <MailTestForm action={sendMailTestAction} defaultRecipient={admin.email} />
-        </CardContent>
+        <MailTestForm action={sendMailTestAction} />
       </Card>
     </div>
   );

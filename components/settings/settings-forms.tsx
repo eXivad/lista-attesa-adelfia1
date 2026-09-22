@@ -1,5 +1,6 @@
 "use client";
 
+import { ChevronDown } from "lucide-react";
 import { useActionState, useId } from "react";
 
 import type { SettingsActionState } from "@/app/(backoffice)/impostazioni/actions";
@@ -45,46 +46,59 @@ export function MailingRecipientForm({ action }: { action: Action }) {
   return <form action={formAction} className="grid gap-4 sm:grid-cols-[1fr_1fr_auto]"><Field name="label" label="Etichetta" /><Field name="email" label="Email" type="email" /><div className="flex items-end"><Button disabled={pending}>Aggiungi</Button></div>{state.status === "error" && <p role="alert" className="text-sm text-red-700 sm:col-span-3">{state.message}</p>}</form>;
 }
 
-export function MailTestForm({
-  action,
-  defaultRecipient,
-}: {
+export function MailTestForm({ action }: {
   action: (state: MailTestActionState, data: FormData) => Promise<MailTestActionState>;
-  defaultRecipient: string;
 }) {
   const [state, formAction, pending] = useActionState(action, { status: "idle" });
 
   return (
-    <form action={formAction} className="space-y-4">
-      <div className="grid gap-4 sm:grid-cols-[1fr_auto]">
-        <Field
-          name="recipient"
-          label="Destinatario della prova"
-          type="email"
-          maxLength={320}
-          autoComplete="email"
-          defaultValue={defaultRecipient}
+    <details className="group">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-4 rounded-2xl p-6 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-300 [&::-webkit-details-marker]:hidden">
+        <span>
+          <span className="block font-slab text-xl font-bold text-violet-950">
+            Diagnostica email
+          </span>
+          <span className="mt-1 block text-sm font-normal text-stone-600">
+            Strumento tecnico per verificare manualmente la configurazione SMTP.
+          </span>
+        </span>
+        <ChevronDown
+          className="size-5 shrink-0 text-violet-800 transition-transform group-open:rotate-180"
+          aria-hidden="true"
         />
-        <div className="flex items-end">
-          <Button className="w-full" disabled={pending}>
-            {pending ? "Invio in corso…" : "Invia email di prova"}
-          </Button>
-        </div>
+      </summary>
+      <div className="border-t border-stone-200 px-6 py-5">
+        <form action={formAction} className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-[1fr_auto]">
+            <Field
+              name="recipient"
+              label="Destinatario della prova"
+              type="email"
+              maxLength={320}
+              autoComplete="off"
+            />
+            <div className="flex items-end">
+              <Button className="w-full" disabled={pending}>
+                {pending ? "Invio in corso…" : "Invia email di prova"}
+              </Button>
+            </div>
+          </div>
+          <p className="text-sm text-stone-600">
+            Il test usa il modello diagnostico e la quota Gmail reale. Ogni invio può consumare un destinatario della quota.
+          </p>
+          {state.status === "success" && (
+            <p role="status" className="rounded-xl bg-emerald-50 p-3 text-sm font-medium text-emerald-900">
+              {state.message}
+            </p>
+          )}
+          {state.status === "error" && (
+            <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm font-medium text-red-800">
+              {state.message}
+            </p>
+          )}
+        </form>
       </div>
-      <p className="text-sm text-stone-600">
-        Il test usa il modello diagnostico e la quota Gmail reale. Ogni invio può consumare un destinatario della quota.
-      </p>
-      {state.status === "success" && (
-        <p role="status" className="rounded-xl bg-emerald-50 p-3 text-sm font-medium text-emerald-900">
-          {state.message}
-        </p>
-      )}
-      {state.status === "error" && (
-        <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm font-medium text-red-800">
-          {state.message}
-        </p>
-      )}
-    </form>
+    </details>
   );
 }
 
