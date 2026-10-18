@@ -17,7 +17,6 @@ export class PrismaStaffInvitationRepository implements StaffInvitationRepositor
           id: invitationId,
           ...command,
           pendingEmail: command.email,
-          pendingMemberCode: command.memberCode,
         },
       });
       await transaction.mailOutbox.create({
@@ -36,14 +35,14 @@ export class PrismaStaffInvitationRepository implements StaffInvitationRepositor
   async findValidByTokenHash(tokenHash: string, now: Date) {
     return this.client.staffInvitation.findFirst({
       where: { tokenHash, acceptedAt: null, expiresAt: { gt: now } },
-      select: { id: true, firstName: true, lastName: true, email: true, memberCode: true, role: true },
+      select: { id: true, firstName: true, lastName: true, email: true, role: true },
     });
   }
 
   async markAccepted(invitationId: string, acceptedAt: Date): Promise<boolean> {
     const result = await this.client.staffInvitation.updateMany({
       where: { id: invitationId, acceptedAt: null, expiresAt: { gt: acceptedAt } },
-      data: { acceptedAt, pendingEmail: null, pendingMemberCode: null },
+      data: { acceptedAt, pendingEmail: null },
     });
     return result.count === 1;
   }

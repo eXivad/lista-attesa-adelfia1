@@ -11,7 +11,7 @@ function setup() {
   const repository: StaffInvitationRepository = {
     create: vi.fn(async () => ({ invitationId: "invite-1", outboxId: "mail-1" })),
     findValidByTokenHash: vi.fn(async () => ({
-      id: "invite-1", firstName: "Anna", lastName: "Verdi", email: "anna@example.it", memberCode: "123456", role: "STAFF" as const,
+      id: "invite-1", firstName: "Anna", lastName: "Verdi", email: "anna@example.it", role: "STAFF" as const,
     })),
     markAccepted: vi.fn(async () => true),
     markMailDelivered: vi.fn(async () => undefined),
@@ -32,7 +32,7 @@ describe("StaffInvitationService", () => {
   it("salva solo l'hash, produce link da 24 ore e invia dopo la persistenza", async () => {
     const { repository, mailProvider, service } = setup();
 
-    await service.invite({ firstName: "Anna", lastName: "Verdi", email: "ANNA@example.it", memberCode: "123456", role: "STAFF", createdById: "admin-1" });
+    await service.invite({ firstName: "Anna", lastName: "Verdi", email: "ANNA@example.it", role: "STAFF", createdById: "admin-1" });
 
     expect(repository.create).toHaveBeenCalledWith(expect.objectContaining({
       email: "anna@example.it",
@@ -67,7 +67,7 @@ describe("StaffInvitationService", () => {
   it("registra il fallimento email e rileva invito consumato in concorrenza", async () => {
     const failedMail = setup();
     failedMail.mailProvider.sendStaffInvitation.mockRejectedValueOnce(new Error("offline"));
-    await failedMail.service.invite({ firstName: "Anna", lastName: "Verdi", email: "anna@example.it", memberCode: "123", role: "STAFF", createdById: "admin" });
+    await failedMail.service.invite({ firstName: "Anna", lastName: "Verdi", email: "anna@example.it", role: "STAFF", createdById: "admin" });
     expect(failedMail.repository.markMailFailed).toHaveBeenCalledWith("mail-1", NOW, "offline");
 
     const stale = setup();
@@ -77,7 +77,7 @@ describe("StaffInvitationService", () => {
 
   it("nega dati invito invalidi prima del repository", async () => {
     const { repository, service } = setup();
-    await expect(service.invite({ firstName: "", lastName: "Verdi", email: "errata", memberCode: "", role: "STAFF", createdById: "admin" })).rejects.toMatchObject({ code: "INVALID_INPUT" });
+    await expect(service.invite({ firstName: "", lastName: "Verdi", email: "errata", role: "STAFF", createdById: "admin" })).rejects.toMatchObject({ code: "INVALID_INPUT" });
     expect(repository.create).not.toHaveBeenCalled();
   });
 });

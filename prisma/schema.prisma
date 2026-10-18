@@ -64,7 +64,6 @@ model User {
   email         String    @unique
   emailVerified Boolean   @default(false)
   image         String?
-  memberCode    String    @unique
   role          UserRole  @default(STAFF)
   banned        Boolean   @default(false)
   banReason     String?
@@ -131,7 +130,6 @@ model StaffInvitation {
   firstName         String
   lastName          String
   email             String
-  memberCode        String
   role              UserRole
   tokenHash         String    @unique
   expiresAt         DateTime  @db.Timestamptz(3)
@@ -139,7 +137,6 @@ model StaffInvitation {
   createdAt         DateTime  @default(now()) @db.Timestamptz(3)
   createdById       String?   @db.VarChar(36)
   pendingEmail      String?   @unique
-  pendingMemberCode String?   @unique
 
   createdBy User? @relation("InvitationCreator", fields: [createdById], references: [id], onDelete: SetNull)
 

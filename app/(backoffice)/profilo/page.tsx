@@ -22,7 +22,7 @@ export default async function ProfilePage({
         firstName: true,
         lastName: true,
         email: true,
-        memberCode: true,
+        id: true,
       },
     }),
     searchParams,
@@ -36,7 +36,7 @@ export default async function ProfilePage({
         <h1 className="mt-2 font-slab text-3xl font-bold text-violet-950">
           Il mio profilo
         </h1>
-        <p className="mt-2 text-stone-600">Codice Socio: {user.memberCode}</p>
+        <p className="mt-2 text-stone-600">ID account: {user.id}</p>
       </div>
       {query.updated === "1" && (
         <p
