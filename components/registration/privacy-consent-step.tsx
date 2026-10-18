@@ -6,13 +6,16 @@ interface PrivacyConsentStepProps {
   policy: { version: string; fileUrl: string };
   error?: string;
   registration: UseFormRegisterReturn<"privacyAccepted">;
+  variant?: "public" | "paper";
 }
 
-export function PrivacyConsentStep({ policy, error, registration }: PrivacyConsentStepProps) {
+export function PrivacyConsentStep({ policy, error, registration, variant = "public" }: PrivacyConsentStepProps) {
   return (
     <div className="space-y-5">
       <div className="rounded-2xl bg-violet-50 p-5 text-sm leading-6 text-violet-950">
-        Leggi attentamente l’informativa qui sotto. Dopo aver letto dichiara la presa visione e procedi con il modulo.
+        {variant === "paper"
+          ? "Se hai acquisito il modulo cartaceo firmato, registra qui l'accettazione dell'informativa. Puoi lasciare la casella vuota se non hai la firma."
+          : "Leggi attentamente l’informativa qui sotto. Dopo aver letto dichiara la presa visione e procedi con il modulo."}
       </div>
       <PrivacyDocumentViewer fileUrl={policy.fileUrl} version={policy.version} />
       <div>
@@ -25,7 +28,9 @@ export function PrivacyConsentStep({ policy, error, registration }: PrivacyConse
             {...registration}
           />
           <span className="text-sm leading-6 text-stone-800">
-            {`Dichiaro di aver letto e compreso l’informativa privacy (versione ${policy.version}) e di essere legittimato/a a fornire i dati degli altri soggetti indicati nel modulo, rendendo loro disponibile la stessa informativa.`}
+            {variant === "paper"
+              ? `Confermo che il modulo cartaceo firmato include l'accettazione dell'informativa privacy (versione ${policy.version}).`
+              : `Dichiaro di aver letto e compreso l’informativa privacy (versione ${policy.version}) e di essere legittimato/a a fornire i dati degli altri soggetti indicati nel modulo, rendendo loro disponibile la stessa informativa.`}
           </span>
         </label>
         {error && (

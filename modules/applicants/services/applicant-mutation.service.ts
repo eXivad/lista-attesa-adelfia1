@@ -1,10 +1,9 @@
 import { hashFiscalCode } from "@/modules/applicants/domain/identifier-hash";
 import { canTransition, type ApplicantStatus } from "@/modules/applicants/domain/state-machine";
 import {
-  createApplicantDataSchema,
-  type ApplicantDataInput,
-  type ValidatedApplicantData,
-} from "@/modules/applicants/schemas/applicant-data";
+  createBackofficeApplicantDataSchema,
+  type ValidatedBackofficeApplicantData,
+} from "@/modules/applicants/schemas/backoffice-applicant-data";
 import type { StatusMailInput } from "@/modules/mail/mail-provider";
 
 export type ApplicantMutationErrorCode =
@@ -35,12 +34,12 @@ export interface ApplicantMutationSummary {
 }
 
 export interface UpdateApplicantCommand {
-  minor: Omit<ValidatedApplicantData["minor"], "birthDate"> & {
+  minor: Omit<ValidatedBackofficeApplicantData["minor"], "birthDate"> & {
     birthDate: Date;
     birthYear: number;
   };
   guardians: Array<
-    Omit<ValidatedApplicantData["guardians"][number], "birthDate"> & { birthDate: Date }
+    Omit<ValidatedBackofficeApplicantData["guardians"][number], "birthDate"> & { birthDate: Date | null }
   >;
 }
 
@@ -90,9 +89,9 @@ export class ApplicantMutationService {
     this.clock = dependencies.clock ?? (() => new Date());
   }
 
-  async update(id: string, input: ApplicantDataInput | unknown) {
+  async update(id: string, input: unknown) {
     const now = this.clock();
-    const parsed = createApplicantDataSchema(() => now).safeParse(input);
+    const parsed = createBackofficeApplicantDataSchema(() => now).safeParse(input);
     if (!parsed.success) {
       throw new ApplicantMutationError("INVALID_INPUT", "Controlla i dati inseriti e riprova.", {
         cause: parsed.error,
@@ -107,7 +106,7 @@ export class ApplicantMutationService {
       },
       guardians: parsed.data.guardians.map((guardian) => ({
         ...guardian,
-        birthDate: toDate(guardian.birthDate),
+        birthDate: guardian.birthDate ? toDate(guardian.birthDate) : null,
       })),
     });
     if (!changed) {

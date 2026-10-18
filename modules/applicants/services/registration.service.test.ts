@@ -50,6 +50,61 @@ function createDependencies(overrides: Partial<ApplicantRegistrationRepository> 
 }
 
 describe("ApplicantRegistrationService", () => {
+  it("crea una pratica interna con un solo genitore parziale senza consenso o invio email", async () => {
+    const { repository, mailProvider, service } = createDependencies();
+    const input = {
+      minor: { ...validRegistrationInput.minor, fiscalCode: "", residenceAddress: "" },
+      guardians: [
+        { ...validRegistrationInput.guardians[0], birthDate: "", fiscalCode: "", email: "" },
+        { ...validRegistrationInput.guardians[1], firstName: "", lastName: "", birthDate: "",
+          birthPlace: "", birthProvince: "", fiscalCode: "", address: "", city: "",
+          province: "", postalCode: "", email: "", phone: "" },
+      ],
+    };
+
+    const result = await service.registerFromBackoffice(input);
+
+    expect(result.registrationNumber).toBe("LA-2026-000123");
+    expect(repository.createRegistration).toHaveBeenCalledWith(expect.objectContaining({
+      privacyAcceptedAt: null,
+      privacyPolicyVersion: null,
+      sendConfirmationEmail: false,
+      minor: expect.objectContaining({ fiscalCode: null, residenceAddress: null }),
+      guardians: [expect.objectContaining({ type: "A", birthDate: null, email: null })],
+    }));
+    expect(repository.isIdentifierBlocked).not.toHaveBeenCalled();
+    expect(mailProvider.sendRegistrationConfirmation).not.toHaveBeenCalled();
+    expect(result.emailDelivery).toBe("NOT_SENT");
+  });
+
+  it("registra il consenso cartaceo e invia la conferma al solo genitore con email", async () => {
+    const { repository, mailProvider, service } = createDependencies();
+    const result = await service.registerFromBackoffice({
+      minor: validRegistrationInput.minor,
+      guardians: [{ ...validRegistrationInput.guardians[0], birthDate: "", fiscalCode: "" }],
+      privacyAccepted: true,
+      privacyPolicyVersion: "2026.1",
+    });
+    expect(repository.createRegistration).toHaveBeenCalledWith(expect.objectContaining({
+      privacyAcceptedAt: NOW,
+      privacyPolicyVersion: "2026.1",
+      sendConfirmationEmail: true,
+    }));
+    expect(mailProvider.sendRegistrationConfirmation).toHaveBeenCalledOnce();
+    expect(result.emailDelivery).toBe("SENT");
+  });
+
+  it("non registra una firma cartacea riferita a una versione privacy scaduta", async () => {
+    const { repository, service } = createDependencies();
+    await expect(service.registerFromBackoffice({
+      minor: validRegistrationInput.minor,
+      guardians: [],
+      privacyAccepted: true,
+      privacyPolicyVersion: "2025.1",
+    })).rejects.toMatchObject({ code: "PRIVACY_VERSION_EXPIRED" });
+    expect(repository.createRegistration).not.toHaveBeenCalled();
+  });
+
   it("crea la pratica in attesa con dati normalizzati e invia la conferma", async () => {
     const { repository, mailProvider, service } = createDependencies();
 

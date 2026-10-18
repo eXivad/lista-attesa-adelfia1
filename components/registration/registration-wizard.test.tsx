@@ -4,6 +4,16 @@ import { describe, expect, it } from "vitest";
 import { RegistrationWizard } from "./registration-wizard";
 
 describe("RegistrationWizard", () => {
+  it("mostra il percorso interno con passaggio privacy cartacea", () => {
+    const html = renderToStaticMarkup(
+      <RegistrationWizard mode="backoffice" privacyPolicy={{ version: "2026.1", fileUrl: "/privacy" }} submitAction={async () => ({ status: "idle" })} />,
+    );
+    expect(html).toContain("Nuova iscrizione dalla segreteria");
+    expect(html).toContain("i genitori sono facoltativi");
+    expect(html).toContain("Privacy");
+    expect(html).not.toContain("informativa privacy completa");
+  });
+
   it("presenta il percorso completo e il primo step in modo accessibile", () => {
     const html = renderToStaticMarkup(
       <RegistrationWizard

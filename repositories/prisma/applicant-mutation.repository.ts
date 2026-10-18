@@ -91,6 +91,9 @@ export class PrismaApplicantMutationRepository implements ApplicantMutationRepos
           },
         });
       }
+      await transaction.guardian.deleteMany({
+        where: { applicantId: id, type: { notIn: command.guardians.map(({ type }) => type) } },
+      });
       return true;
     });
   }

@@ -8,6 +8,7 @@ const command: CreateRegistrationCommand = {
   createdAt: new Date("2026-09-03T12:00:00.000Z"),
   privacyAcceptedAt: new Date("2026-09-03T12:00:00.000Z"),
   privacyPolicyVersion: "2026.1",
+  sendConfirmationEmail: true,
   status: "IN_ATTESA",
   minor: {
     firstName: "Mario",
@@ -70,7 +71,10 @@ function createPrismaDouble() {
       ]),
     },
     waitingListEntry: {
-      create: vi.fn(async () => ({ id: "entry-id" })),
+      create: vi.fn(async (args: { data: { mailOutbox?: unknown } }) => {
+        void args;
+        return { id: "entry-id" };
+      }),
     },
   };
 
@@ -99,6 +103,55 @@ function createPrismaDouble() {
 }
 
 describe("PrismaApplicantRegistrationRepository", () => {
+  it("crea l'iscrizione interna senza consenso o outbox", async () => {
+    const { client, transaction } = createPrismaDouble();
+    const repository = new PrismaApplicantRegistrationRepository(client as never, {
+      createId: () => "entry-id",
+    });
+    const result = await repository.createRegistration({
+      ...command,
+      privacyAcceptedAt: null,
+      privacyPolicyVersion: null,
+      sendConfirmationEmail: false,
+      minor: { ...command.minor, fiscalCode: null },
+      guardians: [],
+    });
+    expect(transaction.mailingRecipient.findMany).not.toHaveBeenCalled();
+    expect(transaction.waitingListEntry.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        privacyAccepted: false,
+        privacyAcceptedAt: null,
+        privacyPolicyVersion: null,
+        guardians: { create: [] },
+      }),
+      select: { id: true },
+    });
+    expect(transaction.waitingListEntry.create.mock.calls[0]?.[0].data).not.toHaveProperty("mailOutbox");
+    expect(result.outboxId).toBeNull();
+  });
+
+  it("invia la conferma interna anche con privacy cartacea non registrata", async () => {
+    const { client, transaction } = createPrismaDouble();
+    const repository = new PrismaApplicantRegistrationRepository(client as never);
+    const result = await repository.createRegistration({
+      ...command,
+      privacyAcceptedAt: null,
+      privacyPolicyVersion: null,
+      guardians: [command.guardians[0]],
+    });
+    expect(transaction.waitingListEntry.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        privacyAccepted: false,
+        mailOutbox: { create: expect.objectContaining({
+          recipients: ["anna@example.it", "capigruppo@example.it"],
+        }) },
+      }),
+      select: { id: true },
+    });
+    expect(result.recipients).toEqual(["anna@example.it"]);
+    expect(result.outboxId).toBeTruthy();
+  });
+
   it("crea contatore, pratica, due tutori e outbox nella stessa transazione", async () => {
     const { client, transaction } = createPrismaDouble();
     const ids = ["entry-id", "guardian-a", "guardian-b", "outbox-id"];

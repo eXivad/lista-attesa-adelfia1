@@ -57,6 +57,71 @@ test.describe("lista d'attesa deterministica", () => {
     await expect(page.getByRole("heading", { name: "Modifica Alice Alpha" })).toBeVisible();
     await expect(page.getByLabel("Nome", { exact: true }).first()).toHaveValue("Alice");
   });
+
+  test("mantiene i filtri quando si torna dal dettaglio", async ({ page }) => {
+    await page.goto("/lista-attesa?gender=F&status=IN_ATTESA&page=1");
+    await page.getByRole("link", { name: "Dettaglio" }).first().click();
+    await page.getByRole("link", { name: "Modifica" }).click();
+    await expect(page.getByRole("heading", { name: /Modifica Alice Alpha/ })).toBeVisible();
+    await page.getByRole("link", { name: "Annulla modifica" }).click();
+    const backToList = page.getByRole("main").getByRole("link", { name: "Lista d’attesa" });
+    await expect(backToList).toHaveAttribute("href", "/lista-attesa?gender=F&status=IN_ATTESA&page=1");
+    await backToList.click();
+    await expect(page).toHaveURL(/\/lista-attesa\?gender=F&status=IN_ATTESA&page=1$/);
+  });
+
+  test("iscrive dal back office senza genitori o consenso privacy", async ({ page }) => {
+    await page.goto("/iscritti/nuovo");
+    await page.getByLabel("Nome", { exact: true }).fill("Nuovo");
+    await page.getByLabel("Cognome", { exact: true }).fill("Parziale");
+    await page.getByLabel("Data di nascita", { exact: true }).fill("2018-05-12");
+    await page.getByRole("button", { name: "Continua" }).click();
+    await page.getByRole("button", { name: "Continua" }).click();
+    await page.getByRole("button", { name: "Continua" }).click();
+    await page.getByRole("button", { name: "Continua" }).click();
+    await expect(page.getByText("Consenso privacy cartaceo non registrato.")).toBeVisible();
+    await page.getByRole("button", { name: "Conferma iscrizione" }).click();
+    await expect(page.getByText("Iscrizione completata")).toBeVisible();
+    await page.getByRole("link", { name: "Apri dettaglio" }).click();
+    await expect(page.getByRole("heading", { name: "Nuovo Parziale" })).toBeVisible();
+    await page.getByRole("link", { name: "Modifica" }).click();
+    await expect(page.getByRole("heading", { name: "Modifica Nuovo Parziale" })).toBeVisible();
+    await page.getByLabel("Note").fill("Aggiornamento con dati ancora incompleti");
+    await confirm(page, "Salva modifiche", "Salva modifiche");
+    await expect(page.getByText("Dati aggiornati correttamente.")).toBeVisible();
+    await expect(page.getByText("Aggiornamento con dati ancora incompleti")).toBeVisible();
+  });
+
+  test("registra la firma cartacea e tenta la conferma all'email indicata", async ({ page }) => {
+    await page.goto("/iscritti/nuovo");
+    await page.getByLabel("Nome", { exact: true }).fill("Conferma");
+    await page.getByLabel("Cognome", { exact: true }).fill("Cartacea");
+    await page.getByLabel("Data di nascita", { exact: true }).fill("2018-05-12");
+    await page.getByRole("button", { name: "Continua" }).click();
+    await page.getByLabel("Email").fill("genitore.e2e@example.test");
+    await page.getByRole("button", { name: "Continua" }).click();
+    await page.getByRole("button", { name: "Continua" }).click();
+    await page.getByRole("checkbox", { name: /modulo cartaceo firmato/i }).check();
+    await page.getByRole("button", { name: "Continua" }).click();
+    await expect(page.getByText(/Consenso raccolto tramite modulo cartaceo/)).toBeVisible();
+    await page.getByRole("button", { name: "Conferma iscrizione" }).click();
+    await expect(page.getByText("Iscrizione completata")).toBeVisible();
+    await expect(page.getByText("Iscrizione salvata, ma la mail di conferma non è partita.")).toBeVisible();
+    await page.getByRole("link", { name: "Apri dettaglio" }).click();
+    await expect(page.getByText("Non registrato", { exact: true })).toHaveCount(0);
+  });
+
+  test("invita un Capo senza Codice Socio", async ({ page }) => {
+    await page.goto("/impostazioni");
+    const form = page.getByRole("button", { name: "Invita Capo" }).locator("xpath=ancestor::form");
+    await expect(form.getByLabel("Codice Socio")).toHaveCount(0);
+    await form.getByLabel("Nome", { exact: true }).fill("Capo");
+    await form.getByLabel("Cognome", { exact: true }).fill("Prova");
+    await form.getByLabel("Email").fill("capo.prova@example.test");
+    await form.getByRole("button", { name: "Invita Capo" }).click();
+    await expect(page.getByText("Invito creato. Controlla lo stato di consegna email.")).toBeVisible();
+    await expect(page.getByText("capo.prova@example.test")).toBeVisible();
+  });
 });
 
 test.describe("ciclo completo chiamate", () => {
@@ -129,7 +194,7 @@ test.describe("autorizzazioni STAFF", () => {
     await expect(page.getByText("Stato aggiornato correttamente.")).toBeVisible();
     await confirm(page, "Cancella definitivamente", "Cancella definitivamente");
     await expect(page).toHaveURL(/\/lista-attesa\?deleted=1$/);
-    await expect(page.locator(`a[href="/iscritti/${fixtures.applicants.alice}"]`)).toHaveCount(0);
+    await expect(page.locator(`a[href^="/iscritti/${fixtures.applicants.alice}?"]`)).toHaveCount(0);
 
     for (const url of ["/anno-associativo", "/statistiche", "/impostazioni"]) {
       await page.goto(url);
@@ -139,7 +204,8 @@ test.describe("autorizzazioni STAFF", () => {
 });
 
 async function visibleApplicantHrefs(page: Page) {
-  return page.locator('a[href^="/iscritti/"]:visible').evaluateAll((links) => links.map((link) => link.getAttribute("href")));
+  return page.locator('a[href^="/iscritti/"]:visible').evaluateAll((links) =>
+    links.map((link) => new URL((link as HTMLAnchorElement).href).pathname));
 }
 
 async function expectApplicants(page: Page, url: string, keys: string[], fixtures: ResetResult) {

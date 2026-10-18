@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { formatDate, formatDateTime } from "@/lib/date-time";
 import { getPrismaClient } from "@/lib/server/prisma";
 import { requireCapability } from "@/lib/server/session";
+import { listHref, listQueryFromSearchParams } from "@/modules/applicants/list-navigation";
 import { calculateBranch } from "@/modules/branches/domain/branch";
 import { PrismaApplicantQueryRepository } from "@/repositories/prisma/applicant-query.repository";
 
@@ -38,6 +39,7 @@ export default async function ApplicantDetailPage({
     result.branchConfiguration,
   );
   const messages = await searchParams;
+  const listQuery = listQueryFromSearchParams(messages);
   const hasIncompleteHistoricalData = !entry.privacyAccepted
     || !entry.fiscalCode
     || !entry.birthPlace
@@ -46,7 +48,7 @@ export default async function ApplicantDetailPage({
   return (
     <div className="space-y-6">
       <Button asChild variant="ghost" className="-ml-3">
-        <Link href="/lista-attesa">
+        <Link href={listHref(listQuery)}>
           <ArrowLeft className="size-4" aria-hidden="true" />
           Lista d’attesa
         </Link>
@@ -63,7 +65,7 @@ export default async function ApplicantDetailPage({
       )}
       {hasIncompleteHistoricalData && (
         <p role="status" className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
-          Record storico con dati incompleti. I valori mancanti sono indicati come “Da completare” e possono essere aggiunti dalla pagina di modifica.
+          Dati incompleti. I valori mancanti sono indicati come “Da completare” e possono essere aggiunti dalla pagina di modifica.
         </p>
       )}
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -81,7 +83,7 @@ export default async function ApplicantDetailPage({
         </div>
         <div>
           <Button asChild variant="outline">
-            <Link href={`/iscritti/${entry.id}/modifica`}>
+            <Link href={`/iscritti/${entry.id}/modifica${listQuery ? `?from=${encodeURIComponent(listQuery)}` : ""}`}>
               <Pencil className="size-4" aria-hidden="true" />
               Modifica
             </Link>
@@ -109,6 +111,7 @@ export default async function ApplicantDetailPage({
             id={entry.id}
             name={`${entry.firstName} ${entry.lastName}`}
             status={entry.status}
+            listQuery={listQuery}
           />
         </CardContent>
       </Card>
@@ -142,12 +145,12 @@ export default async function ApplicantDetailPage({
               ],
               ["CAP", entry.residencePostalCode || "Da completare"],
               ["Branca calcolata", branch ?? "Fuori branca"],
-              ["Versione privacy", entry.privacyPolicyVersion ?? "Non registrata (dato storico)"],
+              ["Versione privacy", entry.privacyPolicyVersion ?? "Non registrata"],
               [
                 "Consenso privacy",
                 entry.privacyAccepted && entry.privacyAcceptedAt
                   ? formatDateTime(entry.privacyAcceptedAt)
-                  : "Non registrato (dato storico)",
+                  : "Non registrato",
               ],
             ]}
           />
@@ -217,6 +220,7 @@ export default async function ApplicantDetailPage({
           <ApplicantDeleteAction
             id={entry.id}
             name={`${entry.firstName} ${entry.lastName}`}
+            listQuery={listQuery}
           />
         </CardContent>
       </Card>

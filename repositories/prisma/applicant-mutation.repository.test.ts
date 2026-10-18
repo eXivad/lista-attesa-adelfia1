@@ -14,7 +14,7 @@ function createClient() {
       })),
       deleteMany: vi.fn(async () => ({ count: 1 })),
     },
-    guardian: { upsert: vi.fn(async () => ({})) },
+    guardian: { upsert: vi.fn(async () => ({})), deleteMany: vi.fn(async () => ({ count: 0 })) },
     callParticipation: { updateMany: vi.fn(async () => ({ count: 1 })) },
     blockedIdentifier: { upsert: vi.fn(async () => ({})) },
     mailOutbox: { create: vi.fn(async () => ({})) },
@@ -91,12 +91,25 @@ describe("PrismaApplicantMutationRepository", () => {
       }),
     });
     expect(transaction.guardian.upsert).toHaveBeenCalledTimes(2);
+    expect(transaction.guardian.deleteMany).toHaveBeenCalledWith({
+      where: { applicantId: "applicant-1", type: { notIn: ["A", "B"] } },
+    });
     expect(transaction.guardian.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
         update: expect.objectContaining({ postalCode: "70010" }),
         create: expect.objectContaining({ applicantId: "applicant-1", postalCode: "70010" }),
       }),
     );
+  });
+
+  it("rimuove i genitori svuotati nella modifica", async () => {
+    const { client, transaction } = createClient();
+    const repository = new PrismaApplicantMutationRepository(client as never);
+    await repository.updateApplicant("applicant-1", { ...updateCommand, guardians: [] });
+    expect(transaction.guardian.upsert).not.toHaveBeenCalled();
+    expect(transaction.guardian.deleteMany).toHaveBeenCalledWith({
+      where: { applicantId: "applicant-1", type: { notIn: [] } },
+    });
   });
 
   it("rifiuta con compare-and-set, aggiorna la campagna e crea blocco e outbox", async () => {

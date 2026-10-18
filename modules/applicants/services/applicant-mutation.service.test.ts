@@ -52,6 +52,20 @@ function setup(status: ApplicantStatus = "DA_CHIAMARE") {
 }
 
 describe("ApplicantMutationService", () => {
+  it("salva dati parziali e nessun genitore nel dettaglio", async () => {
+    const { repository, service } = setup("IN_ATTESA");
+    await service.update("applicant-1", {
+      minor: { ...validRegistrationInput.minor, fiscalCode: "", birthPlace: "",
+        birthProvince: "", residenceAddress: "", residenceCity: "",
+        residenceProvince: "", residencePostalCode: "" },
+      guardians: [],
+    });
+    expect(repository.updateApplicant).toHaveBeenCalledWith("applicant-1", expect.objectContaining({
+      minor: expect.objectContaining({ fiscalCode: null, birthPlace: null }),
+      guardians: [],
+    }));
+  });
+
   it("aggiorna solo i dati editabili e lascia createdAt fuori dal comando", async () => {
     const { repository, service } = setup("IN_ATTESA");
     const data = {

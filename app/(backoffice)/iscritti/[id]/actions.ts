@@ -6,6 +6,7 @@ import { z } from "zod";
 
 import { getApplicantMutationService } from "@/lib/server/applicant-mutations";
 import { requireCapability } from "@/lib/server/session";
+import { detailHref, listHref } from "@/modules/applicants/list-navigation";
 import { APPLICANT_STATUSES } from "@/modules/applicants/domain/state-machine";
 import { applicantDataFromFormData } from "@/modules/applicants/schemas/applicant-form-data";
 import { ApplicantMutationError } from "@/modules/applicants/services/applicant-mutation.service";
@@ -19,6 +20,7 @@ export type ApplicantActionState =
 
 export async function updateApplicantAction(
   idInput: string,
+  listQuery: string,
   _previousState: ApplicantActionState,
   formData: FormData,
 ): Promise<ApplicantActionState> {
@@ -34,12 +36,13 @@ export async function updateApplicantAction(
   }
   revalidatePath(`/iscritti/${id.data}`);
   revalidatePath("/lista-attesa");
-  redirect(`/iscritti/${id.data}?updated=1`);
+  redirect(detailHref(id.data, listQuery, "updated"));
 }
 
 export async function changeApplicantStatusAction(
   idInput: string,
   targetInput: string,
+  listQuery: string,
   _previousState: ApplicantActionState,
   _formData: FormData,
 ): Promise<ApplicantActionState> {
@@ -59,11 +62,12 @@ export async function changeApplicantStatusAction(
   }
   revalidatePath(`/iscritti/${parsed.data.id}`);
   revalidatePath("/lista-attesa");
-  redirect(`/iscritti/${parsed.data.id}?statusChanged=1`);
+  redirect(detailHref(parsed.data.id, listQuery, "statusChanged"));
 }
 
 export async function deleteApplicantAction(
   idInput: string,
+  listQuery: string,
   _previousState: ApplicantActionState,
   _formData: FormData,
 ): Promise<ApplicantActionState> {
@@ -79,7 +83,9 @@ export async function deleteApplicantAction(
     return actionError(error, "Non è stato possibile cancellare l'iscritto.");
   }
   revalidatePath("/lista-attesa");
-  redirect("/lista-attesa?deleted=1");
+  const destination = new URL(listHref(listQuery), "http://local");
+  destination.searchParams.set("deleted", "1");
+  redirect(`${destination.pathname}${destination.search}`);
 }
 
 function actionError(error: unknown, fallback: string): ApplicantActionState {
