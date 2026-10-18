@@ -3,6 +3,7 @@ export type UserRole = "ADMIN" | "STAFF";
 export type Capability =
   | "dashboard:read"
   | "applicants:read"
+  | "applicants:create"
   | "applicants:update"
   | "applicants:delete"
   | "applicants:change-status"
@@ -22,6 +23,7 @@ export interface AuthenticatedUser {
 const STAFF_CAPABILITIES = new Set<Capability>([
   "dashboard:read",
   "applicants:read",
+  "applicants:create",
   "applicants:update",
   "applicants:delete",
   "applicants:change-status",

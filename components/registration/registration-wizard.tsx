@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { cloneElement, isValidElement, useMemo, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Check, ChevronLeft, ChevronRight, LoaderCircle } from "lucide-react";
@@ -14,9 +15,11 @@ import {
   createApplicantRegistrationSchema,
   type ApplicantRegistrationInput,
 } from "@/modules/applicants/schemas/registration";
+import { createBackofficeApplicantDataSchema } from "@/modules/applicants/schemas/backoffice-applicant-data";
 import { cn } from "@/lib/utils";
 
-const steps = ["Dati del minore", "Genitore A", "Genitore B", "Privacy", "Riepilogo", "Conferma"];
+const publicSteps = ["Dati del minore", "Genitore A", "Genitore B", "Privacy", "Riepilogo", "Conferma"];
+const backofficeSteps = ["Dati del minore", "Genitore A", "Genitore B", "Privacy", "Riepilogo", "Conferma"];
 
 const stepFields: Array<Array<FieldPath<ApplicantRegistrationInput>>> = [
   [
@@ -67,19 +70,25 @@ const stepFields: Array<Array<FieldPath<ApplicantRegistrationInput>>> = [
 
 export type RegisterApplicantActionResult =
   | { status: "idle" }
-  | { status: "success"; registrationNumber: string; emailDelivery: "SENT" | "FAILED" }
+  | { status: "success"; registrationNumber: string; emailDelivery: "SENT" | "FAILED" | "NOT_SENT"; id?: string }
   | { status: "error"; message: string };
 
 interface RegistrationWizardProps {
-  privacyPolicy: { version: string; fileUrl: string };
+  privacyPolicy?: { version: string; fileUrl: string };
+  mode?: "public" | "backoffice";
   submitAction: (input: ApplicantRegistrationInput) => Promise<RegisterApplicantActionResult>;
 }
 
-export function RegistrationWizard({ privacyPolicy, submitAction }: RegistrationWizardProps) {
+export function RegistrationWizard({ privacyPolicy, submitAction, mode = "public" }: RegistrationWizardProps) {
+  const isBackoffice = mode === "backoffice";
+  const steps = isBackoffice ? backofficeSteps : publicSteps;
+  const summaryStep = steps.length - 2;
   const [step, setStep] = useState(0);
   const [pending, setPending] = useState(false);
   const [result, setResult] = useState<RegisterApplicantActionResult>({ status: "idle" });
-  const schema = useMemo(() => createApplicantRegistrationSchema(), []);
+  const schema = useMemo(() => isBackoffice
+    ? createBackofficeApplicantDataSchema(() => new Date(), true)
+    : createApplicantRegistrationSchema(), [isBackoffice]);
   const form = useForm<ApplicantRegistrationInput>({
     resolver: zodResolver(schema) as Resolver<ApplicantRegistrationInput>,
     mode: "onTouched",
@@ -100,7 +109,7 @@ export function RegistrationWizard({ privacyPolicy, submitAction }: Registration
       },
       guardians: [emptyGuardian("A"), emptyGuardian("B")],
       privacyAccepted: false,
-      privacyPolicyVersion: privacyPolicy.version,
+      privacyPolicyVersion: privacyPolicy?.version ?? "",
     },
   });
 
@@ -113,7 +122,7 @@ export function RegistrationWizard({ privacyPolicy, submitAction }: Registration
   async function goForward() {
     const isValid = await form.trigger(stepFields[step], { shouldFocus: true });
     if (isValid) {
-      setStep((current) => Math.min(current + 1, 4));
+      setStep((current) => Math.min(current + 1, summaryStep));
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
   }
@@ -122,10 +131,10 @@ export function RegistrationWizard({ privacyPolicy, submitAction }: Registration
     setPending(true);
     setResult({ status: "idle" });
     try {
-      const actionResult = await submitAction(input);
+      const actionResult = await submitAction(isBackoffice ? form.getValues() : input);
       setResult(actionResult);
       if (actionResult.status === "success") {
-        setStep(5);
+        setStep(summaryStep + 1);
       }
     } finally {
       setPending(false);
@@ -144,14 +153,26 @@ export function RegistrationWizard({ privacyPolicy, submitAction }: Registration
             <p className="max-w-lg text-stone-600">
               Conserva il numero della pratica: potrà essere utilizzato per richiedere assistenza al Gruppo.
             </p>
-            <p className="max-w-lg text-stone-600">
+            {!isBackoffice && <p className="max-w-lg text-stone-600">
               Riceverai un’email a breve agli indirizzi indicati nel modulo. 📩 Se non la trovi, controlla anche la cartella Spam o Posta indesiderata.
-            </p>
+            </p>}
           </div>
           <strong className="rounded-2xl bg-violet-50 px-6 py-4 font-mono text-xl tracking-wide text-violet-950">
             {result.registrationNumber}
           </strong>
-          {result.emailDelivery === "FAILED" && (
+          {isBackoffice && result.id && <Button asChild><Link href={`/iscritti/${result.id}`}>Apri dettaglio</Link></Button>}
+          {isBackoffice && result.emailDelivery === "SENT" && (
+            <p className="text-sm text-emerald-900">Conferma inviata agli indirizzi email indicati.</p>
+          )}
+          {isBackoffice && result.emailDelivery === "NOT_SENT" && (
+            <p className="text-sm text-stone-600">Nessuna email indicata: conferma non inviata.</p>
+          )}
+          {isBackoffice && result.emailDelivery === "FAILED" && (
+            <p className="rounded-xl bg-amber-50 p-4 text-sm text-amber-950">
+              Iscrizione salvata, ma la mail di conferma non è partita.
+            </p>
+          )}
+          {!isBackoffice && result.emailDelivery === "FAILED" && (
             <p className="max-w-lg rounded-xl bg-amber-50 p-4 text-sm text-amber-950">
               La pratica è valida, ma la mail di conferma non è partita. I Capi potranno verificarne l’invio.
             </p>
@@ -165,14 +186,16 @@ export function RegistrationWizard({ privacyPolicy, submitAction }: Registration
     <div className="space-y-5">
       <div>
         <h1 className="font-slab mt-2 text-3xl font-bold text-violet-950 sm:text-4xl">
-          Modulo di Pre-Iscrizione al Gruppo
+          {isBackoffice ? "Nuova iscrizione dalla segreteria" : "Modulo di Pre-Iscrizione al Gruppo"}
         </h1>
         <p className="mt-3 max-w-2xl text-stone-600">
-          Completa tutti i passaggi. Potrai verificare le informazioni inserite prima dell’invio definitivo.
+          {isBackoffice
+            ? "Inserisci i dati disponibili. Per il minore sono richiesti nome, cognome, sesso e data di nascita; i genitori sono facoltativi. La conferma sarà inviata agli indirizzi email indicati."
+            : "Completa tutti i passaggi. Potrai verificare le informazioni inserite prima dell’invio definitivo."}
         </p>
-        <p className="mt-3 text-sm font-medium text-violet-800">
+        {!isBackoffice && privacyPolicy && <p className="mt-3 text-sm font-medium text-violet-800">
           Nel passaggio dedicato potrai leggere l’informativa privacy completa, versione {privacyPolicy.version}, prima di confermare la richiesta.
-        </p>
+        </p>}
       </div>
 
       <nav
@@ -203,7 +226,7 @@ export function RegistrationWizard({ privacyPolicy, submitAction }: Registration
 
       <Card>
         <CardHeader>
-          <p className="text-sm font-bold text-violet-700">Passaggio {step + 1} di 5</p>
+          <p className="text-sm font-bold text-violet-700">Passaggio {step + 1} di {summaryStep + 1}</p>
           <h2 className="font-slab text-2xl font-bold text-violet-950">{steps[step]}</h2>
         </CardHeader>
         <CardContent>
@@ -253,22 +276,27 @@ export function RegistrationWizard({ privacyPolicy, submitAction }: Registration
             )}
 
             {(step === 1 || step === 2) && (
-              <GuardianFields
+              <><p className="mb-5 text-sm text-stone-600">{isBackoffice ? "Compila solo i dati disponibili; puoi lasciare vuoto questo genitore." : "Inserisci i dati del genitore o tutore."}</p><GuardianFields
                 index={step - 1 as 0 | 1}
                 register={form.register}
                 errorFor={errorFor}
-              />
+              /></>
             )}
 
-            {step === 3 && (
+            {step === 3 && (privacyPolicy ? (
               <PrivacyConsentStep
                 policy={privacyPolicy}
                 error={errorFor("privacyAccepted")}
                 registration={form.register("privacyAccepted")}
+                variant={isBackoffice ? "paper" : "public"}
               />
-            )}
+            ) : isBackoffice ? (
+              <p className="rounded-xl bg-amber-50 p-4 text-sm text-amber-950">
+                Nessuna informativa attiva: il consenso cartaceo non può essere registrato in questa iscrizione.
+              </p>
+            ) : null)}
 
-            {step === 4 && <RegistrationSummary values={values} />}
+            {step === summaryStep && <RegistrationSummary values={values} isBackoffice={isBackoffice} />}
 
             {result.status === "error" && (
               <p role="alert" className="mt-6 rounded-xl bg-red-50 p-4 text-sm font-medium text-red-900">
@@ -286,7 +314,7 @@ export function RegistrationWizard({ privacyPolicy, submitAction }: Registration
                 <ChevronLeft className="size-4" aria-hidden="true" />
                 Indietro
               </Button>
-              {step < 4 ? (
+              {step < summaryStep ? (
                 <Button key="continue" type="button" onClick={goForward}>
                   Continua
                   <ChevronRight className="size-4" aria-hidden="true" />
@@ -376,7 +404,7 @@ function GuardianFields({ index, register, errorFor }: GuardianFieldsProps) {
   );
 }
 
-function RegistrationSummary({ values }: { values: ApplicantRegistrationInput }) {
+function RegistrationSummary({ values, isBackoffice }: { values: ApplicantRegistrationInput; isBackoffice: boolean }) {
   return (
     <div className="space-y-6">
       <SummarySection title="Minore" rows={[
@@ -386,10 +414,11 @@ function RegistrationSummary({ values }: { values: ApplicantRegistrationInput })
         ["Codice Fiscale", values.minor.fiscalCode],
         ["Residenza", `${values.minor.residenceAddress}, ${values.minor.residenceCity} (${values.minor.residenceProvince}) ${values.minor.residencePostalCode}`],
       ]} />
-      {values.guardians.map((guardian, index) => (
+      {values.guardians.filter((guardian) => !isBackoffice ||
+        Object.entries(guardian).some(([key, value]) => key !== "type" && Boolean(value))).map((guardian) => (
         <SummarySection
           key={guardian.type}
-          title={`Genitore ${index === 0 ? "A" : "B"}`}
+          title={`Genitore ${guardian.type}`}
           rows={[
             ["Nome", `${guardian.firstName} ${guardian.lastName}`],
             ["Email", guardian.email],
@@ -398,9 +427,17 @@ function RegistrationSummary({ values }: { values: ApplicantRegistrationInput })
           ]}
         />
       ))}
-      <p className="rounded-xl bg-emerald-50 p-4 text-sm text-emerald-950">
+      {!isBackoffice && <p className="rounded-xl bg-emerald-50 p-4 text-sm text-emerald-950">
         Consenso privacy versione <strong>{values.privacyPolicyVersion}</strong> confermato.
-      </p>
+      </p>}
+      {isBackoffice && <p className="rounded-xl bg-amber-50 p-4 text-sm text-amber-950">
+        {values.privacyAccepted
+          ? `Consenso raccolto tramite modulo cartaceo per l'informativa versione ${values.privacyPolicyVersion}.`
+          : "Consenso privacy cartaceo non registrato."}
+        {values.guardians.some((guardian) => guardian.email.trim())
+          ? " La conferma sarà inviata agli indirizzi email indicati."
+          : " Nessuna email di conferma sarà inviata."}
+      </p>}
     </div>
   );
 }

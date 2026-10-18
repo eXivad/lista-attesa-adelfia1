@@ -51,7 +51,6 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
         firstName: true,
         lastName: true,
         email: true,
-        memberCode: true,
         role: true,
       },
     }),
@@ -242,7 +241,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                   <div>
                     <p className="font-bold">{user.firstName} {user.lastName}</p>
                     <p className="text-sm text-stone-600">
-                      {user.email} · {user.memberCode} · {user.role === "ADMIN" ? "Capo Gruppo" : "Capo"}
+                      {user.email} · {user.role === "ADMIN" ? "Capo Gruppo" : "Capo"} · ID {user.id}
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2">

@@ -11,6 +11,7 @@ describe("RBAC", () => {
   const staffCapabilities: Capability[] = [
     "dashboard:read",
     "applicants:read",
+    "applicants:create",
     "applicants:update",
     "applicants:delete",
     "applicants:change-status",

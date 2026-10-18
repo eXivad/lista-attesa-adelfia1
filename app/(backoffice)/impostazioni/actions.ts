@@ -99,7 +99,6 @@ const staffSchema = z.object({
   firstName: z.string().trim().min(1).max(120),
   lastName: z.string().trim().min(1).max(120),
   email: z.email().transform((value) => value.trim().toLowerCase()),
-  memberCode: z.string().trim().min(1).max(40),
   role: z.enum(["ADMIN", "STAFF"]),
 });
 
@@ -112,7 +111,7 @@ export async function inviteStaffAction(_state: SettingsActionState, formData: F
     await getStaffInvitationService().invite({ ...parsed.data, createdById: admin.id });
   } catch (error) {
     if (error instanceof StaffInvitationError) return { status: "error", message: error.userMessage };
-    return { status: "error", message: "Email o Codice Socio già utilizzati, oppure invio non disponibile." };
+    return { status: "error", message: "Email già utilizzata, oppure invio non disponibile." };
   }
   revalidatePath("/impostazioni");
   redirect("/impostazioni?invited=1");
@@ -127,7 +126,7 @@ export async function resendInvitationAction(invitationId: string, _state: Setti
   try {
     await getStaffInvitationService().invite({
       firstName: invitation.firstName, lastName: invitation.lastName, email: invitation.email,
-      memberCode: invitation.memberCode, role: invitation.role, createdById: admin.id,
+      role: invitation.role, createdById: admin.id,
     });
   } catch {
     return { status: "error", message: "Non è stato possibile reinviare l'invito." };
@@ -164,7 +163,7 @@ export async function updateStaffAction(userId: string, _state: SettingsActionSt
       data: { ...parsed.data, name: `${parsed.data.firstName} ${parsed.data.lastName}` },
     });
   } catch {
-    return { status: "error", message: "Email o Codice Socio già utilizzati." };
+    return { status: "error", message: "Email già utilizzata." };
   }
   revalidatePath("/impostazioni");
   redirect("/impostazioni?staffUpdated=1");

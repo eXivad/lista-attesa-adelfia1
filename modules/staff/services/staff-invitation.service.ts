@@ -8,7 +8,6 @@ const invitationSchema = z.object({
   firstName: z.string().trim().min(1).max(120),
   lastName: z.string().trim().min(1).max(120),
   email: z.email().transform((value) => value.trim().toLowerCase()),
-  memberCode: z.string().trim().min(1).max(40),
   role: z.enum(["ADMIN", "STAFF"]),
   createdById: z.string().min(1),
 });
@@ -27,7 +26,6 @@ export interface PendingStaffInvitation {
   firstName: string;
   lastName: string;
   email: string;
-  memberCode: string;
   role: UserRole;
 }
 

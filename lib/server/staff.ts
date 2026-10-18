@@ -23,7 +23,6 @@ export function getStaffInvitationService() {
               role: input.role,
               firstName: input.firstName,
               lastName: input.lastName,
-              memberCode: input.memberCode,
             },
           },
         });

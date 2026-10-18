@@ -70,7 +70,7 @@ async function resetFixtures(scenario: "list" | "calls") {
 
     if (staff && staffPasswordHash) {
       await transaction.user.deleteMany({
-        where: { role: "STAFF", OR: [{ email: staff.email }, { memberCode: staff.memberCode }] },
+        where: { role: "STAFF", email: staff.email },
       });
       const userId = randomUUID();
       await transaction.user.create({ data: {
@@ -80,7 +80,6 @@ async function resetFixtures(scenario: "list" | "calls") {
         lastName: staff.lastName,
         email: staff.email,
         emailVerified: true,
-        memberCode: staff.memberCode,
         role: "STAFF",
       } });
       await transaction.account.create({ data: {
@@ -201,6 +200,5 @@ function readStaffFixture() {
     lastName: "Staff",
     email,
     password,
-    memberCode: process.env.E2E_STAFF_MEMBER_CODE?.trim() || "E2E-STAFF-001",
   };
 }

@@ -86,5 +86,5 @@ export function ApplicantEditForm({ action, values }: ApplicantEditFormProps) {
 }
 
 function Field({ label, ...props }: { label: string } & React.ComponentProps<typeof Input>) {
-  return <label className="space-y-2 text-sm font-bold text-stone-800">{label}<Input required {...props} /></label>;
+  return <label className="space-y-2 text-sm font-bold text-stone-800">{label}<Input required={props.name === "minor.firstName" || props.name === "minor.lastName" || props.name === "minor.birthDate"} {...props} /></label>;
 }

@@ -74,12 +74,13 @@ export class PrismaApplicantRegistrationRepository implements ApplicantRegistrat
           select: { lastValue: true },
         });
         const registrationNumber = formatRegistrationNumber(registrationYear, counter.lastValue);
-        const internalRecipients = await transaction.mailingRecipient.findMany({
+        const internalRecipients = command.sendConfirmationEmail ? await transaction.mailingRecipient.findMany({
           where: { isActive: true },
           orderBy: { email: "asc" },
           select: { email: true },
-        });
-        const recipients = uniqueEmails(command.guardians.map(({ email }) => email));
+        }) : [];
+        const recipients = command.sendConfirmationEmail
+          ? uniqueEmails(command.guardians.map(({ email }) => email)) : [];
         const recipientSet = new Set(recipients);
         const bccRecipients = uniqueEmails(internalRecipients.map(({ email }) => email))
           .filter((email) => !recipientSet.has(email));
@@ -103,7 +104,7 @@ export class PrismaApplicantRegistrationRepository implements ApplicantRegistrat
             residencePostalCode: command.minor.residencePostalCode,
             notes: command.minor.notes,
             status: command.status,
-            privacyAccepted: true,
+            privacyAccepted: Boolean(command.privacyAcceptedAt),
             privacyAcceptedAt: command.privacyAcceptedAt,
             privacyPolicyVersion: command.privacyPolicyVersion,
             createdAt: command.createdAt,
@@ -141,7 +142,7 @@ export class PrismaApplicantRegistrationRepository implements ApplicantRegistrat
                   },
                 }
               : {}),
-            mailOutbox: {
+            ...(command.sendConfirmationEmail ? { mailOutbox: {
               create: {
                 id: outboxId,
                 type: "REGISTRATION_CONFIRMATION",
@@ -153,7 +154,7 @@ export class PrismaApplicantRegistrationRepository implements ApplicantRegistrat
                 },
                 createdAt: command.createdAt,
               },
-            },
+            } } : {}),
           },
           select: { id: true },
         });
@@ -162,7 +163,7 @@ export class PrismaApplicantRegistrationRepository implements ApplicantRegistrat
           id: entryId,
           registrationNumber,
           status: command.status,
-          outboxId,
+          outboxId: command.sendConfirmationEmail ? outboxId : null,
           recipients,
           bccRecipients,
         };
@@ -199,8 +200,8 @@ export class PrismaApplicantRegistrationRepository implements ApplicantRegistrat
   }
 }
 
-function uniqueEmails(emails: string[]): string[] {
-  return [...new Set(emails.map((email) => email.trim().toLowerCase()))];
+function uniqueEmails(emails: Array<string | null>): string[] {
+  return [...new Set(emails.filter((email): email is string => Boolean(email)).map((email) => email.trim().toLowerCase()))];
 }
 
 function isUniqueConstraintError(error: unknown): error is { code: "P2002" } {

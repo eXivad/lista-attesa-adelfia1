@@ -34,7 +34,7 @@ export function StaffInvitationForm({ action }: { action: Action }) {
   const [state, formAction, pending] = useActionState(action, { status: "idle" });
   return <form action={formAction} className="grid gap-4 sm:grid-cols-2">
     <Field name="firstName" label="Nome" /><Field name="lastName" label="Cognome" />
-    <Field name="email" label="Email" type="email" /><Field name="memberCode" label="Codice Socio" />
+    <Field name="email" label="Email" type="email" />
     <label className="space-y-2 text-sm font-bold">Ruolo<select className="form-control" name="role"><option value="STAFF">Capo</option><option value="ADMIN">Capo Gruppo</option></select></label>
     <div className="flex items-end"><Button className="w-full" disabled={pending}>{pending ? "Invio…" : "Invita Capo"}</Button></div>
     {state.status === "error" && <p className="sm:col-span-2 text-sm font-medium text-red-700" role="alert">{state.message}</p>}
@@ -144,11 +144,11 @@ export function SettingsDangerForm({ action, label, confirmation, variant = "out
   return <form id={formId} action={formAction}><ConfirmationDialog formId={formId} triggerLabel={label} title="Conferma operazione" description={confirmation} confirmLabel={label} size="sm" variant={variant} pending={pending} />{state.status === "error" && <p role="alert" className="mt-1 text-xs text-red-700">{state.message}</p>}</form>;
 }
 
-export function StaffEditForm({ action, user }: { action: Action; user: { firstName: string; lastName: string; email: string; memberCode: string; role: "ADMIN" | "STAFF" } }) {
+export function StaffEditForm({ action, user }: { action: Action; user: { firstName: string; lastName: string; email: string; role: "ADMIN" | "STAFF" } }) {
   const [state, formAction, pending] = useActionState(action, { status: "idle" });
   return <form action={formAction} className="mt-3 grid gap-3 rounded-xl bg-stone-50 p-3 sm:grid-cols-2">
     <Field name="firstName" label="Nome" defaultValue={user.firstName} /><Field name="lastName" label="Cognome" defaultValue={user.lastName} />
-    <Field name="email" label="Email" type="email" defaultValue={user.email} /><Field name="memberCode" label="Codice Socio" defaultValue={user.memberCode} />
+    <Field name="email" label="Email" type="email" defaultValue={user.email} />
     <label className="space-y-2 text-sm font-bold">Ruolo<select name="role" className="form-control" defaultValue={user.role}><option value="STAFF">Capo</option><option value="ADMIN">Capo Gruppo</option></select></label>
     <div className="flex items-end"><Button disabled={pending} variant="outline" className="w-full">{pending ? "Salvataggio…" : "Salva utente"}</Button></div>
     {state.status === "error" && <p role="alert" className="text-sm text-red-700 sm:col-span-2">{state.message}</p>}

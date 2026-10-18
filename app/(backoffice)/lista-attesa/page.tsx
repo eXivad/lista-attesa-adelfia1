@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, Search, SlidersHorizontal } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Search, SlidersHorizontal } from "lucide-react";
 
 import { BranchBadge, StatusBadge } from "@/components/applicants/status-badge";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,8 @@ export default async function ApplicantListPage({ searchParams }: ApplicantListP
   const rawFilters = await searchParams;
   const filters = applicantListQuerySchema.parse(rawFilters);
   const result = await new PrismaApplicantQueryRepository(getPrismaClient()).list(filters);
+  const listQuery = new URL(pageHref(rawFilters, filters.page), "http://local").searchParams.toString();
+  const detailLink = (id: string) => `/iscritti/${id}?from=${encodeURIComponent(listQuery)}`;
 
   return (
     <div className="space-y-6">
@@ -32,6 +34,7 @@ export default async function ApplicantListPage({ searchParams }: ApplicantListP
             <h1 className="font-slab text-3xl font-bold text-violet-950">Lista d’attesa</h1>
             <p className="mt-2 text-stone-600">{result.total} iscritti trovati, sempre in ordine cronologico.</p>
           </div>
+          <Button asChild><Link href="/iscritti/nuovo"><Plus className="size-4" aria-hidden="true" />Nuova iscrizione</Link></Button>
         </div>
       </div>
 
@@ -150,7 +153,7 @@ export default async function ApplicantListPage({ searchParams }: ApplicantListP
                       <div><dt className="text-stone-500">Branca</dt><dd className="mt-1"><BranchBadge branch={branch} /></dd></div>
                       <div className="col-span-2"><dt className="text-stone-500">Iscrizione</dt><dd className="font-medium text-stone-900">{formatDateTime(entry.createdAt)}</dd></div>
                     </dl>
-                    <Button asChild variant="outline" className="mt-5 w-full"><Link href={`/iscritti/${entry.id}`}>Apri dettaglio</Link></Button>
+                    <Button asChild variant="outline" className="mt-5 w-full"><Link href={detailLink(entry.id)}>Apri dettaglio</Link></Button>
                   </CardContent>
                 </Card>
               );
@@ -172,7 +175,7 @@ export default async function ApplicantListPage({ searchParams }: ApplicantListP
                     <td className="px-4 py-4"><BranchBadge branch={calculateBranch(entry.birthYear, result.associativeYearStart, result.branchConfiguration)} /></td>
                     <td className="px-4 py-4 text-stone-700">{formatDateTime(entry.createdAt)}</td>
                     <td className="px-4 py-4"><StatusBadge status={entry.status} /></td>
-                    <td className="px-4 py-4 text-right"><Button asChild variant="ghost" size="sm"><Link href={`/iscritti/${entry.id}`}>Dettaglio</Link></Button></td>
+                    <td className="px-4 py-4 text-right"><Button asChild variant="ghost" size="sm"><Link href={detailLink(entry.id)}>Dettaglio</Link></Button></td>
                   </tr>
                 ))}
               </tbody>

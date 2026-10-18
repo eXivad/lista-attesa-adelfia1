@@ -43,7 +43,6 @@ function createAuth() {
       additionalFields: {
         firstName: { type: "string", required: true, input: false },
         lastName: { type: "string", required: true, input: false },
-        memberCode: { type: "string", required: true, input: false },
       },
     },
     rateLimit: {
