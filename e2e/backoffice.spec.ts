@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 
 import { completePublicRegistration, login, resetFixtures, type ResetResult } from "./helpers";
@@ -112,15 +113,16 @@ test.describe("lista d'attesa deterministica", () => {
   });
 
   test("invita un Capo senza Codice Socio", async ({ page }) => {
+    const email = `capo.prova.${randomUUID()}@example.test`;
     await page.goto("/impostazioni");
     const form = page.getByRole("button", { name: "Invita Capo" }).locator("xpath=ancestor::form");
     await expect(form.getByLabel("Codice Socio")).toHaveCount(0);
     await form.getByLabel("Nome", { exact: true }).fill("Capo");
     await form.getByLabel("Cognome", { exact: true }).fill("Prova");
-    await form.getByLabel("Email").fill("capo.prova@example.test");
+    await form.getByLabel("Email").fill(email);
     await form.getByRole("button", { name: "Invita Capo" }).click();
     await expect(page.getByText("Invito creato. Controlla lo stato di consegna email.")).toBeVisible();
-    await expect(page.getByText("capo.prova@example.test")).toBeVisible();
+    await expect(page.getByText(email)).toBeVisible();
   });
 });
 
@@ -204,7 +206,7 @@ test.describe("autorizzazioni STAFF", () => {
 });
 
 async function visibleApplicantHrefs(page: Page) {
-  return page.locator('a[href^="/iscritti/"]:visible').evaluateAll((links) =>
+  return page.locator('a[href^="/iscritti/"]:not([href="/iscritti/nuovo"]):visible').evaluateAll((links) =>
     links.map((link) => new URL((link as HTMLAnchorElement).href).pathname));
 }
 
